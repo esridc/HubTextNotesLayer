@@ -52,7 +52,7 @@ export default class HubNote {
 
   setHover (state) {
     if (this.textElement) {
-      let hovered = this.hovered();
+      const hovered = this.hovered();
       if (state) {
         this.textElement.classList.add(NOTE_HOVER_CLASS);
       } else {
@@ -66,7 +66,7 @@ export default class HubNote {
   }
 
   setSelect (state) {
-    let selected = this.selected();
+    const selected = this.selected();
     if (this.textElement) {
       if (state) {
         this.textElement.classList.add(NOTE_SELECT_CLASS);
