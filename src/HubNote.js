@@ -281,10 +281,10 @@ export default class HubNote {
         text: this.textElement.innerText,
         color: textBackgroundColor,
         font: {
-          size: textStyle.fontSize,
-          style: textStyle.fontStyle,
-          weight: fontWeight,
-          family: textStyle.fontFamily, // TODO: what about limited JSAPI support for font families?
+          size: textStyle.fontSize || '16px',
+          style: textStyle.fontStyle || 'normal',
+          weight: fontWeight || 'normal',
+          family: textStyle.fontFamily || 'Arial', // TODO: what about limited JSAPI support for font families?
         },
         haloSize: 1,
         haloColor: textColor,
