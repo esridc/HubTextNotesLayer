@@ -9,10 +9,12 @@ const HubNotesLayer = Layer.createSubclass({
   declaredClass: 'HubNotesLayer',
   noteId: 0, // incrementing ide to uniquely identify notes in the layer
 
-  constructor ({ editable, text, textClass }) {
-    Object.assign(this, { editable, text, textClass });
+  constructor ({ editable, textPlaceholder, textClass }) {
+    Object.assign(this, { editable, textPlaceholder, textClass });
     this.hubNotes = [];
   },
+
+  // TODO: destroy
 
   createLayerView (view) {
     if (view.type === '2d') {
@@ -28,17 +30,19 @@ const HubNotesLayer = Layer.createSubclass({
     this.emit(`note-${type}`, { note, ...event });
   },
 
-  addNoteForGraphic (graphic) {
+  addNoteForGraphic (graphic, { text, focus } = {}) {
     const note = new HubNote({
       id: this.noteId++,
       editable: this.editable,
       graphic,
-      text: this.text,
+      text,
+      textPlaceholder: this.textPlaceholder,
       textClass: this.textClass,
       onNoteEvent: this.onNoteEvent.bind(this)
     });
     this.hubNotes.push(note);
-    this.emit('note-add', { note });
+    this.emit('note-add', { note, focus });
+    return note;
   },
 
   removeNoteForGraphic (graphic) {

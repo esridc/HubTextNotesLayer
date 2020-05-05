@@ -13,8 +13,8 @@ const NOTE_STYLE = `
 // Instances of HubNote manage an individual text note attached to a graphic, including handling text input
 // and positioning (sometimes dynamically updated as the view changes) relative to the "anchor" graphic.
 export default class HubNote {
-  constructor ({ id, editable = false, graphic, text = '', textClass, onNoteEvent }) {
-    Object.assign(this, { id, editable, graphic, text, textClass });
+  constructor ({ id, editable = false, graphic, text = '', textPlaceholder = '', textClass, onNoteEvent }) {
+    Object.assign(this, { id, editable, graphic, text, textPlaceholder, textClass });
     this.onNoteEvent = typeof onNoteEvent === 'function' ? onNoteEvent : function(){}; // provide an empty callback as fallback
     this.anchor = null; // a point on the graphic that the text note is positioned relative to
     this.mapPoint = null; // the current computed map point for the text note element
@@ -24,6 +24,7 @@ export default class HubNote {
     if (this.textElement) {
       this.textElement.parentElement.removeChild(this.textElement);
     }
+    // TODO: destroy event listeners
   }
 
   focused () {
@@ -80,11 +81,12 @@ export default class HubNote {
     }
   }
 
-  createTextElement (view) {
+  createTextElement (view, focus) {
     // setup note element
     this.textElement = document.createElement('div');
-    this.textElement.innerText = this.text;
     this.textElement.contentEditable = this.editable;
+    this.textElement.innerText = this.text;
+    this.textElement.setAttribute('data-placeholder', this.textPlaceholder);
     this.textElement.tabIndex = 1;
     this.textElement.classList.add(this.textClass); // apply user-supplied style
     this.textElement.style = NOTE_STYLE; // apply non-visual properties
@@ -131,6 +133,10 @@ export default class HubNote {
 
     view.surface.appendChild(this.textElement); // add to view DOM
     this.updatePosition(view);
+
+    if (focus) {
+      this.textElement.focus();
+    }
   }
 
   // Update text note position in world space and screenspace
