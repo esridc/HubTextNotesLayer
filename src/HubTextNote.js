@@ -10,9 +10,9 @@ const NOTE_STYLE = `
   -webkit-user-select: auto; /* mobile safari needs this for contenteditable to work properly */
 `;
 
-// Instances of HubNote manage an individual text note attached to a graphic, including handling text input
+// Instances of HubTextNote manage an individual text note attached to a graphic, including handling text input
 // and positioning (sometimes dynamically updated as the view changes) relative to the "anchor" graphic.
-export default class HubNote {
+export default class HubTextNote {
   constructor ({ id, editable = false, graphic, text = '', textPlaceholder = '', textClass, onNoteEvent }) {
     Object.assign(this, { id, editable, graphic, text, textPlaceholder, textClass });
     this.onNoteEvent = typeof onNoteEvent === 'function' ? onNoteEvent : function(){}; // provide an empty callback as fallback

@@ -2,8 +2,8 @@ import * as BaseLayerView2D from 'esri/views/2d/layers/BaseLayerView2D';
 import * as Graphic from 'esri/Graphic';
 
 // The layer view is resopnsible for creating and managing text note HTML elements to stay in sync with the map view
-const HubNotesLayerView2D = BaseLayerView2D.createSubclass({
-  declaredClass: 'HubNotesLayerView2D',
+const HubTextNotesLayerView2D = BaseLayerView2D.createSubclass({
+  declaredClass: 'HubTextNotesLayerView2D',
 
   constructor () {
     this._handles = [];
@@ -80,4 +80,4 @@ function elementContainsPoint (element, { x, y }) {
   return (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom);
 }
 
-export default HubNotesLayerView2D;
+export default HubTextNotesLayerView2D;

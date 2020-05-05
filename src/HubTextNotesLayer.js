@@ -1,12 +1,12 @@
 import * as Layer from 'esri/layers/Layer';
 
-import HubNote from './HubNote';
-import HubNotesLayerView2D from './HubNotesLayerView2D';
+import HubTextNote from './HubTextNote';
+import HubTextNotesLayerView2D from './HubTextNotesLayerView2D';
 
 // The layer is responsible for creating  and managing text notes that are attached to graphics
 // (the latter are owned by other layers)
-const HubNotesLayer = Layer.createSubclass({
-  declaredClass: 'HubNotesLayer',
+const HubTextNotesLayer = Layer.createSubclass({
+  declaredClass: 'HubTextNotesLayer',
   noteId: 0, // incrementing ide to uniquely identify notes in the layer
 
   constructor ({ editable, textPlaceholder, textClass }) {
@@ -18,7 +18,7 @@ const HubNotesLayer = Layer.createSubclass({
 
   createLayerView (view) {
     if (view.type === '2d') {
-      return new HubNotesLayerView2D({
+      return new HubTextNotesLayerView2D({
         view: view,
         layer: this
       });
@@ -31,7 +31,7 @@ const HubNotesLayer = Layer.createSubclass({
   },
 
   addNoteForGraphic (graphic, { text, focus } = {}) {
-    const note = new HubNote({
+    const note = new HubTextNote({
       id: this.noteId++,
       editable: this.editable,
       graphic,
@@ -47,10 +47,13 @@ const HubNotesLayer = Layer.createSubclass({
 
   removeNoteForGraphic (graphic) {
     const note = this.findNoteForGraphic(graphic);
-    if (!note) return;
+    if (!note) {
+      return;
+    }
     this.hubNotes = this.hubNotes.filter(n => n !== note);
+    const noteId = note.id;
     note.destroy();
-    this.emit('note-remove', { note });
+    this.emit('note-remove', { noteId, graphic });
   },
 
   // retrieve note by unique id
@@ -142,4 +145,4 @@ function elementsIntersect (a, b) {
   return true;
 }
 
-export default HubNotesLayer;
+export default HubTextNotesLayer;

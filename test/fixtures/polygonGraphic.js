@@ -1,12 +1,4 @@
-// const chai = require('chai');
-// const HubNote = require('../src/HubNote');
-import chai from 'chai';
-import HubNote from '../src/HubNote';
-
-const assert = chai.assert;
-
-// TODO move to fixtures
-const graphic = {
+export default {
   "geometry": {
     "type": "polygon",
     "spatialReference": {
@@ -97,28 +89,3 @@ const graphic = {
   },
   "attributes": {}
 };
-
-describe('HubNote', () => {
-
-  it('returns an new instanceof', () => {
-    const note = new HubNote({});
-    assert.instanceOf(note, HubNote);
-  });
-
-  it('creates a text element', () => {
-    const surface = document.createElement('div');
-    const view = {
-      surface,
-      zoom: 10,
-      resolution: 0.01,
-      toScreen({ x, y }) { return { x: x/2, y: y/2} }
-    };
- 
-    const note = new HubNote({ graphic, text: 'this is a test note' });
-    note.createTextElement(view);
-
-    assert.instanceOf(note.textElement, HTMLElement);
-    assert.propertyVal(note, 'text', 'this is a test note');
-  });
-
-});

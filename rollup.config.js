@@ -4,9 +4,9 @@ import commonjs from 'rollup-plugin-commonjs';
 import { terser } from 'rollup-plugin-terser';
 
 export default {
-  input: 'src/HubNotesLayer.js',
+  input: 'src/HubTextNotesLayer.js',
   output: {
-    file: 'dist/HubNotesLayer.js',
+    file: 'dist/HubTextNotesLayer.js',
     format: 'amd'
   },
   plugins: [
