@@ -100,7 +100,7 @@ export default class HubTextNote {
       }
 
       this.text = this.textElement.innerText;
-      this.onNoteEvent('update', this, event);
+      this.onNoteEvent('update-text', this, event);
     });
 
     // we don't want these events interfering with the underlying map view
@@ -143,7 +143,6 @@ export default class HubTextNote {
   updatePosition (view) {
     this.updateMapPoint(view);
     this.updateTextElement(view);
-    this.onNoteEvent('update', this);
   }
 
   // Update position of the HTML div in screenspace
