@@ -16,18 +16,24 @@ const HubTextNotesLayerView2D = BaseLayerView2D.createSubclass({
 
     // add event handlers
     this._handles.push(this.layer.on('note-add', event => this.addNoteTextElement(event.note, event.focus)));
-    this._handles.push(this.layer.on(['note-hover', 'note-select'], () => { this._dirty = true; this.requestRender(); }));
-    this._handles.push(this.view.watch('extent', () => { this._dirty = true; this.requestRender(); }));
+    this._handles.push(this.layer.on(['note-hover', 'note-select'], () => this.setDirty(true)));
+    this._handles.push(this.view.watch('extent', () => this.setDirty(true)));
   },
 
   detach () {
     this._handles.forEach(handle => handle.remove());
   },
 
+  setDirty (dirty) {
+    this._dirty = dirty;
+    if (this._dirty) {
+      this.requestRender();
+    }
+  },
+
   addNoteTextElement (note, focus) {
     note.createTextElement(this.view, focus);
-    this._dirty = true;
-    this.requestRender();
+    this.setDirty(true);
   },
 
   // Implementation of LayerView method
@@ -39,7 +45,7 @@ const HubTextNotesLayerView2D = BaseLayerView2D.createSubclass({
 
     // render calls much more frequently than we need to update, so only run collision and DOM updates when needed
     if (this._dirty) {
-      this._dirty = false;
+      this.setDirty(false);
       this.layer.updateNotePositions(this.view); // update text note positions in world/screen
       this.layer.collideNotes(); // update text note visibility based on collisions
     }
