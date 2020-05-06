@@ -1,4 +1,5 @@
 import * as geometryEngine from 'esri/geometry/geometryEngine';
+import { getFontSettings } from './fonts';
 
 // CSS classes added to text note elements to indicate hover and select states
 const NOTE_HOVER_CLASS = 'note-hover';
@@ -265,13 +266,13 @@ export default class HubTextNote {
 
     const textStyle = window.getComputedStyle(this.textElement);
 
-    // get font color from text element
-    const textColor = convertElementColorProperty(this.textElement, 'color', false) || [0, 0, 0, 255];
+    // get font colors from text element
+    // use text element background color as font halo color, because JSAPI TextSymbol doesn't support background color
+    const textColor = convertElementColorProperty(textStyle, 'color', false) || [0, 0, 0, 255];
+    const textBackgroundColor = convertElementColorProperty(textStyle, 'backgroundColor', false) || [255, 255, 255, 255];
 
-    // use text element background color as font halo color,
-    // because JSAPI TextSymbol doesn't support background color
-    const textBackgroundColor = convertElementColorProperty(this.textElement, 'backgroundColor', false) || [255, 255, 255, 255];
-    let fontWeight = convertFontWeightNumberToName(textStyle.fontWeight);
+    // apply font defaults where needed for TextSymbol compatibility
+    const font = getFontSettings(textStyle);
 
     // offset from current position to anchor on graphic
     const textOffset = {
@@ -284,15 +285,15 @@ export default class HubTextNote {
       symbol: {
         type: 'esriTS',
         text: this.textElement.innerText,
-        color: textBackgroundColor,
+        color: textColor,
         font: {
-          size: textStyle.fontSize || '16px',
-          style: textStyle.fontStyle || 'normal',
-          weight: fontWeight || 'normal',
-          family: textStyle.fontFamily || 'Arial', // TODO: what about limited JSAPI support for font families?
+          size: font.fontSize,
+          style: font.fontStyle,
+          weight: font.fontWeight,
+          family: font.fontFamily
         },
         haloSize: 1,
-        haloColor: textColor,
+        haloColor: textBackgroundColor,
         horizontalAlignment: 'center',
         verticalAlignment: 'middle',
         xoffset: textOffset.x, // apply offset from the anchor to the current computed position
@@ -330,18 +331,8 @@ function pt2px (pt = 0) {
   return pt / 0.75;
 }
 
-function convertFontWeightNumberToName (fontWeight) {
-  switch (fontWeight) {
-    case '700':
-      return 'bold';
-    case '400':
-    default:
-      return 'normal';
-  } // TextSymbol supports only bold and normal. Also bolder and lighter but not for 2D Feature Layers at the moment.
-}
-
-function convertElementColorProperty (element, prop, useAlpha) {
-  const val = window.getComputedStyle(element)[prop];
+function convertElementColorProperty (computedStyle, prop, useAlpha) {
+  const val = computedStyle[prop];
   if (!val) return;
 
   const match = val.match(/\((.*)\)/); // match rgb() or rgba() syntax
