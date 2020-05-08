@@ -1,10 +1,15 @@
 export function getFontSettings({ fontFamily, fontStyle, fontWeight, fontSize }) {
-  // TextSymbol supports only bold and normal. Also bolder and lighter but not for 2D Feature Layers at the moment.
-  fontWeight = fontWeight >= 700 ? 'bold' : DEFAULT_FONT.weight;
+  fontFamily = fontFamily || DEFAULT_FONT.family;
   fontStyle = fontStyle || DEFAULT_FONT.style;
   fontSize = fontSize || DEFAULT_FONT.size;
-  
+
+  // TextSymbol supports only `bold` and `normal` for 2D (supports `bolder` and `lighter` for 3D)
+  if (!['normal', 'bold'].includes(fontWeight)) {
+    fontWeight = parseInt(fontWeight) >= 700 ? 'bold' : DEFAULT_FONT.weight;
+  }
+
   // strip out extraneous characters such as quotes that interfere with matching below
+  fontFamily = fontFamily.split(',')[0]; // take first font family
   const stripFontFamily = fontFamily.match(/([\w\d\s]+)/);
   if (stripFontFamily) {
     fontFamily = stripFontFamily[0];
@@ -12,7 +17,6 @@ export function getFontSettings({ fontFamily, fontStyle, fontWeight, fontSize })
 
   if (!isFontSupported({ family: fontFamily, style: fontStyle, weight: fontWeight })) {
     fontFamily = DEFAULT_FONT.family;
-    fontSize = DEFAULT_FONT.size;
     fontStyle = DEFAULT_FONT.style;
     fontWeight = DEFAULT_FONT.weight;
   }
