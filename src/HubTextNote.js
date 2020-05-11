@@ -195,8 +195,11 @@ export default class HubTextNote {
     );
     const elementHeight = this.textElement.offsetHeight; // height of text element
     const pixelDist = (graphicHeight + elementHeight) / 2 - this.graphic.symbol.yoffset + this.buffer;
-    const textPoint = this.anchor.clone();
-    textPoint.y -= view.resolution * pixelDist;
+    const textScreenPoint = view.toScreen(this.anchor);
+    const textPoint = view.toMap({
+      x: textScreenPoint.x,
+      y: textScreenPoint.y + pixelDist
+    });
     return textPoint;
   }
 
