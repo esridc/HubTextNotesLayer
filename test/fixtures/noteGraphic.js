@@ -11,9 +11,9 @@ export default {
     "type": "esriTS",
     "text": "this is a test note",
     "color": [
-      255,
-      255,
-      255,
+      0,
+      0,
+      0,
       255
     ],
     "font": {
@@ -24,9 +24,9 @@ export default {
     },
     "haloSize": 1,
     "haloColor": [
-      0,
-      0,
-      0,
+      255,
+      255,
+      255,
       255
     ],
     "horizontalAlignment": "center",
