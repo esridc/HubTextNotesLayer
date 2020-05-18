@@ -92,7 +92,6 @@ export default class HubTextNote {
     this.textElement.classList.add(this.textClass); // apply user-supplied style
     this.textElement.style = NOTE_STYLE; // apply non-visual properties
 
-    this.text = this.textElement.innerText;
     this.textElement.addEventListener('input', event => {
       // exit edit mode when a user hits enter
       if ((event.inputType === 'insertText' || event.inputType === 'insertParagraph') && event.data == null) {
@@ -100,7 +99,7 @@ export default class HubTextNote {
         this.textElement.blur();
       }
 
-      this.text = this.textElement.innerText;
+      this.text = this.textElement.innerText; // update current text
       this.onNoteEvent('update-text', this, event);
     });
 
