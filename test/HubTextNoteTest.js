@@ -15,6 +15,11 @@ describe('HubNote', () => {
     view = createView();
     note = new HubTextNote({ graphic: polygonGraphic, text: 'this is a test note' });
     note.createTextElement(view);
+    document.body.appendChild(note.textElement); // needs to be in DOM for some tests like focus
+  });
+
+  afterEach(() => {
+    document.body.removeChild(note.textElement);
   });
 
   it('returns an new note instance', () => {
@@ -37,6 +42,12 @@ describe('HubNote', () => {
     assert.equal(note.hovered(), false);
     note.setHover(true);
     assert.equal(note.hovered(), true);
+  });
+
+  it('sets the focused state', () => {
+    assert.equal(note.focused(), false);
+    note.focus();
+    assert.equal(note.focused(), true);
   });
 
   it('hides the note', () => {

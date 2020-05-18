@@ -28,6 +28,12 @@ export default class HubTextNote {
     // TODO: destroy event listeners
   }
 
+  focus() {
+    if (this.textElement) {
+      this.textElement.focus();
+    }
+  }
+
   focused () {
     return this.textElement === document.activeElement;
   }
