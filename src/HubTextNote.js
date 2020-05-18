@@ -95,7 +95,9 @@ export default class HubTextNote {
     this.textElement.innerText = this.text;
     this.textElement.setAttribute('data-placeholder', this.textPlaceholder);
     this.textElement.tabIndex = 1;
-    this.textElement.classList.add(this.textClass); // apply user-supplied style
+    if (this.textClass) {
+      this.textElement.classList.add(this.textClass); // apply user-supplied style
+    }
     this.textElement.style = NOTE_STYLE; // apply non-visual properties
 
     this.textElement.addEventListener('input', event => {
@@ -278,6 +280,7 @@ export default class HubTextNote {
     // use text element background color as font halo color, because JSAPI TextSymbol doesn't support background color
     const textColor = convertElementColorProperty(textStyle, 'color', false) || [0, 0, 0, 255];
     const textBackgroundColor = convertElementColorProperty(textStyle, 'backgroundColor', false) || [255, 255, 255, 255];
+    const textHasBackgroundColor = textColor.some((c, i) => textBackgroundColor[i] !== c); // is the background color different?
 
     // apply font defaults where needed for TextSymbol compatibility
     const font = getFontSettings(textStyle);
@@ -300,8 +303,8 @@ export default class HubTextNote {
           weight: font.fontWeight,
           family: font.fontFamily
         },
-        haloSize: 1,
-        haloColor: textBackgroundColor,
+        haloSize: textHasBackgroundColor ? 2 : 0, // NOTE: fixed halo size is somewhat arbitrary
+        haloColor: textHasBackgroundColor ? textBackgroundColor : null,
         horizontalAlignment: 'center',
         verticalAlignment: 'middle',
         xoffset: textOffset.x, // apply offset from the anchor to the current computed position

@@ -9,7 +9,8 @@ module.exports = function (config) {
         files: [
             {
                 pattern: 'test/**/*.js'
-            }
+            },
+            'test/notes.css'
         ],
 
         preprocessors: {

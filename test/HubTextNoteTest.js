@@ -13,7 +13,7 @@ describe('HubNote', () => {
 
   beforeEach(() => {
     view = createView();
-    note = new HubTextNote({ graphic: polygonGraphic, text: 'this is a test note' });
+    note = new HubTextNote({ graphic: polygonGraphic, text: 'this is a test note', textClass: 'map-note' });
     note.createTextElement(view);
     document.body.appendChild(note.textElement); // needs to be in DOM for some tests like focus
   });

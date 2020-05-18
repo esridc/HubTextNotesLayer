@@ -11,9 +11,9 @@ export default {
     "type": "esriTS",
     "text": "this is a test note",
     "color": [
-      0,
-      0,
-      0,
+      50,
+      50,
+      50,
       255
     ],
     "font": {
@@ -22,7 +22,7 @@ export default {
       "weight": "normal",
       "family": "Arial"
     },
-    "haloSize": 1,
+    "haloSize": 2,
     "haloColor": [
       255,
       255,
@@ -37,4 +37,4 @@ export default {
   "attributes": {
     "text": "this is a test note"
   }
-}
+};

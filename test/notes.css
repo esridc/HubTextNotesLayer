@@ -1,0 +1,29 @@
+.map-note {
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid #CA2A8F;
+  box-shadow:0 3px 28px rgba(0,0,0,.2);
+  color: rgb(50, 50, 50);
+  font-family: "Avenir Next", "Avenir Next W01", Avenir, "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-weight: bold;
+  max-width: 150px;
+  min-width: 50px;
+  opacity: 1;
+  padding: 10px 13px;
+  text-align: center;
+}
+
+.map-note.note-hover {
+  border: 1px solid rgb(0, 137, 255);
+}
+
+.map-note.note-select {
+  border: 1px solid rgb(0, 118, 201);
+}
+
+/* simulates a placeholder attribute for contenteditable div */
+.map-note[contenteditable=true]:empty:before {
+  content: attr(data-placeholder);
+  color: rgb(100, 100, 100);
+  pointer-events: none;
+  display: block; /* For Firefox */
+}
