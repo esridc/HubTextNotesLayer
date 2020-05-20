@@ -1,4 +1,5 @@
 import * as geometryEngine from 'esri/geometry/geometryEngine';
+import * as Point from 'esri/geometry/Point';
 import { getFontSettings } from './fonts';
 
 // CSS classes added to text note elements to indicate hover and select states
@@ -182,12 +183,11 @@ export default class HubTextNote {
       point = this.placePolygonNote(view);
     }
 
-    this.mapPoint = {
-      type: 'point',
+    this.mapPoint = new Point({
       spatialReference: this.graphic.geometry.spatialReference,
       x: point.x,
       y: point.y
-    };
+    });
   }
 
   placePointNote (view) {

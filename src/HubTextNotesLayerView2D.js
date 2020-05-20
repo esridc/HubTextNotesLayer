@@ -52,15 +52,15 @@ const HubTextNotesLayerView2D = BaseLayerView2D.createSubclass({
   },
 
   // Implement hitTest API, returning a single graphic for this feature.
-  // Only returns a graphic with a note ID and text (the note can then obtained from the layer by ID),
-  // similar to VectorTileLayer (which returns info on layer hit but no geometry).
-  // TODO: we could return a geometry with the extent of the note's bounding box here?
+  // Returns a graphic with a note ID and text attributes (the note can then obtained from the layer by ID),
+  // and centerpoint as geometry.
   hitTest (x, y) {
     const notes = this.layer.hubNotes
       .filter(note => !note.hidden()) // ignore notes hidden by collision detection
       .filter(note => note.textElement && elementContainsPoint(note.textElement, { x, y })); // point is inside note
 
     const graphic = notes[0] && new Graphic({
+      geometry: notes[0].mapPoint, // TODO: add full note extent if deemed necessary
       attributes: {
         id: notes[0].id,
         text: notes[0].text
