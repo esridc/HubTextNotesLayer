@@ -20,14 +20,15 @@ module.exports = function (config) {
         rollupPreprocessor: {
             output: {
                 format: 'umd',
-                name: 'HubNotesLayerTestSuite',
+                name: 'HubNotesLayerTestSuite'
             },
             // treeshake: false, // treeshaking can remove test code we need!
             plugins: [
               resolve(),
               commonjs(),
               babel({
-                exclude: ['node_modules/**']
+                exclude: ['node_modules/**'],
+                plugins: ['@babel/plugin-proposal-class-properties']
               })
             ]
         },

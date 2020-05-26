@@ -1,4 +1,5 @@
 import chai from 'chai';
+import { loadModules } from 'esri-loader';
 import HubTextNote from '../src/HubTextNote';
 
 import { createView } from './helpers';
@@ -10,6 +11,12 @@ const assert = chai.assert;
 describe('HubNote', () => {
 
   let note, view;
+
+  before(async () => {
+    // load JSAPI dependencies
+    const [Point, geometryEngine] = await loadModules(['esri/geometry/Point', 'esri/geometry/geometryEngine']);
+    Object.assign(HubTextNote, { Point, geometryEngine });
+  });
 
   beforeEach(() => {
     view = createView();

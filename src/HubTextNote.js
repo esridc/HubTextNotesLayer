@@ -15,6 +15,11 @@ const NOTE_STYLE = `
 // Instances of HubTextNote manage an individual text note attached to a graphic, including handling text input
 // and positioning (sometimes dynamically updated as the view changes) relative to the "anchor" graphic.
 export default class HubTextNote {
+
+  // NOTE: this is a workaround to allow these modules to be externally loaded in tests
+  static Point = Point;
+  static geometryEngine = geometryEngine;
+
   constructor ({ id, editable = false, graphic, text = '', textPlaceholder = '', textClass, onNoteEvent }) {
     Object.assign(this, { id, editable, graphic, text, textPlaceholder, textClass });
     this.onNoteEvent = typeof onNoteEvent === 'function' ? onNoteEvent : function(){}; // provide an empty callback as fallback
@@ -179,7 +184,7 @@ export default class HubTextNote {
       point = this.placePolygonNote(view);
     }
 
-    this.mapPoint = new Point({
+    this.mapPoint = new HubTextNote.Point({
       spatialReference: this.graphic.geometry.spatialReference,
       x: point.x,
       y: point.y
@@ -210,11 +215,11 @@ export default class HubTextNote {
     if (!this.anchor) {
       // find placement anchor and vector
       const line = this.graphic.geometry;
-      const hull = geometryEngine.convexHull(line);
+      const hull = HubTextNote.geometryEngine.convexHull(line);
 
       if (hull.type === 'polygon') {
         this.center = hull.centroid;
-        this.anchor = geometryEngine.nearestCoordinate(line, this.center).coordinate;
+        this.anchor = HubTextNote.geometryEngine.nearestCoordinate(line, this.center).coordinate;
         this.vector = normalize([
           this.center.x - this.anchor.x,
           this.center.y - this.anchor.y

@@ -23,6 +23,7 @@ export default {
           }
         ]
       ],
+      plugins: ['@babel/plugin-proposal-class-properties'],
       exclude: 'node_modules/**'
     })    
   ]
