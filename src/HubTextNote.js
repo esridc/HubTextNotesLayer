@@ -29,7 +29,7 @@ export default class HubTextNote {
     // TODO: destroy event listeners
   }
 
-  focus() {
+  focus () {
     if (this.textElement) {
       this.textElement.focus();
     }
@@ -89,7 +89,7 @@ export default class HubTextNote {
     }
   }
 
-  createTextElement (view, focus) {
+  createTextElement (view) {
     // setup note element
     this.textElement = document.createElement('div');
     this.textElement.contentEditable = this.editable;
@@ -142,10 +142,6 @@ export default class HubTextNote {
 
     view.surface.appendChild(this.textElement); // add to view DOM
     this.updatePosition(view);
-
-    if (focus) {
-      this.textElement.focus();
-    }
   }
 
   // Update text note position in world space and screenspace

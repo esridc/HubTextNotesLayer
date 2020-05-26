@@ -15,7 +15,7 @@ const HubTextNotesLayerView2D = BaseLayerView2D.createSubclass({
     this.layer.hubNotes.forEach(note => this.addNoteTextElement(note));
 
     // add event handlers
-    this._handles.push(this.layer.on('note-add', event => this.addNoteTextElement(event.note, event.focus)));
+    this._handles.push(this.layer.on('note-add', event => this.addNoteTextElement(event.note)));
     this._handles.push(this.layer.on(['note-hover', 'note-select'], () => this.setDirty(true)));
     this._handles.push(this.view.watch('extent', () => this.setDirty(true)));
   },
@@ -31,8 +31,8 @@ const HubTextNotesLayerView2D = BaseLayerView2D.createSubclass({
     }
   },
 
-  addNoteTextElement (note, focus) {
-    note.createTextElement(this.view, focus);
+  addNoteTextElement (note) {
+    note.createTextElement(this.view);
     this.setDirty(true);
   },
 
