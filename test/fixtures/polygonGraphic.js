@@ -64,7 +64,18 @@ export default {
           "y": 4707872.199839918,
         };
       } 
-    }
+    },
+    // Shimmed data (result of extent getter on polygon)
+    "extent": {
+      "spatialReference": {
+        "latestWkid": 3857,
+        "wkid": 102100
+      },
+      "xmin": -8565347.170438128,
+      "ymin": 4705409.454599368,
+      "xmax": -8561538.564874137,
+      "ymax": 4710213.193386729
+    }    
   },
   "symbol": {
     "type": "esriSFS",

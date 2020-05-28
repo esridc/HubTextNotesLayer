@@ -1,11 +1,10 @@
 export default {
   "geometry": {
     "spatialReference": {
-      "latestWkid": 3857,
-      "wkid": 102100
+      "wkid": 4326
     },
-    "x": -8563600.549432032,
-    "y": 4707872.199839918
+    "x": -8561599.265341949,
+    "y": 4707804.194556565
   },
   "symbol": {
     "type": "esriTS",

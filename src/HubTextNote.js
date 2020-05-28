@@ -20,8 +20,8 @@ export default class HubTextNote {
   static Point = Point;
   static geometryEngine = geometryEngine;
 
-  constructor ({ id, editable = false, graphic, text = '', textPlaceholder = '', textClass, onNoteEvent }) {
-    Object.assign(this, { id, editable, graphic, text, textPlaceholder, textClass });
+  constructor ({ id, editable = false, graphic, text = '', textPlaceholder = '', textClass, placeNearPoint, onNoteEvent }) {
+    Object.assign(this, { id, editable, graphic, text, textPlaceholder, textClass, placeNearPoint });
     this.onNoteEvent = typeof onNoteEvent === 'function' ? onNoteEvent : function(){}; // provide an empty callback as fallback
     this.anchor = null; // a point on the graphic that the text note is positioned relative to
     this.mapPoint = null; // the current computed map point for the text note element
@@ -192,10 +192,11 @@ export default class HubTextNote {
   }
 
   placePointNote (view) {
-    if (!this.anchor) {
+    if (!this.anchor) { // find placement anchor if this is the first time placing the note
       this.anchor = this.graphic.geometry;
       this.buffer = 3; // space in pixels between marker and note
     }
+
     const graphicHeight = pt2px(
       this.graphic.symbol.type === 'picture-marker'
         ? this.graphic.symbol.height // height from picture marker
@@ -212,42 +213,85 @@ export default class HubTextNote {
   }
 
   placeLineNote (view) {
-    if (!this.anchor) {
-      // find placement anchor and vector
+    if (!this.anchor) { // find placement anchor and vector if this is the first time placing the note
       const line = this.graphic.geometry;
-      const hull = HubTextNote.geometryEngine.convexHull(line);
+      let nearPoint = this.placeNearPoint;
 
-      if (hull.type === 'polygon') {
-        this.center = hull.centroid;
-        this.anchor = HubTextNote.geometryEngine.nearestCoordinate(line, this.center).coordinate;
-        this.vector = normalize([
-          this.center.x - this.anchor.x,
-          this.center.y - this.anchor.y
-        ]);
-      } else { // polyline
-        // simple average of vertices
-        this.center = hull.paths[0]
-            .reduce((a, b) => [a[0] + b[0], a[1] + b[1]], [0, 0])
-            .map(p => p / hull.paths[0].length);
-        this.center = {
+      // if no "hint" location for note placement was provided, choose one based on geometry
+      if (!nearPoint) {
+        // use a simple average of the line's vertices as center (JSAPI doesn't have a line centerpoint out of the box)
+        const center = line.paths[0]
+          .reduce((a, b) => [a[0] + b[0], a[1] + b[1]], [0, 0])
+          .map(p => p / line.paths[0].length);
+
+        this.anchor = {
           type: 'point',
           spatialReference: { wkid: 102100, latestWkid: 3857 },
-          x: this.center[0],
-          y: this.center[1]
+          x: center[0],
+          y: center[1]
         };
 
-        this.anchor = this.center;
-
         // derive normal perpendicular to line from first to last point
-        const first = hull.paths[0][0];
-        const last = hull.paths[0][hull.paths[0].length - 1];
+        const first = line.paths[0][0];
+        const last = line.paths[0][line.paths[0].length - 1];
         this.vector = normalize([
           -(last[1] - first[1]),
           last[0] - first[0]
         ]);
+      } else {
+        this.anchor = HubTextNote.geometryEngine.nearestCoordinate(line, nearPoint).coordinate;
+        this.vector = normalize([
+          this.anchor.x - nearPoint.x,
+          this.anchor.y - nearPoint.y
+        ]);
       }
     }
-    // keep text note at a variable pixel distance from the line based on its size
+
+    return this.computeAnchoredPosition(view);
+  }
+
+  placePolygonNote (view) {
+    if (!this.anchor) { // find placement anchor and vector if this is the first time placing the note
+      const polygon = this.graphic.geometry;
+      let nearPoint = this.placeNearPoint;
+
+      // if no "hint" location for note placement was provided, choose one based on geometry
+      if (!nearPoint) {
+        const extent = polygon.extent;
+        if (extent.width > extent.height) { // if wider, place near bottom side
+          nearPoint = {
+            type: 'point',
+            x: (extent.xmin + extent.xmax) / 2,
+            y: extent.ymin
+          };
+        } else { // if taller, place near right side
+          nearPoint = {
+            type: 'point',
+            x: extent.xmax,
+            y: (extent.ymin + extent.ymax) / 2
+          };
+        }
+      }
+
+      // place along the polygon's outer ring
+      const ring = {
+        type: 'polyline',
+        paths: [polygon.rings[0]]
+      };
+      this.anchor = HubTextNote.geometryEngine.nearestCoordinate(ring, nearPoint).coordinate;
+      // point vector away from centroid so note is pushed "out" from polygon edge
+      this.vector = normalize([
+        polygon.centroid.x - this.anchor.x,
+        polygon.centroid.y - this.anchor.y
+      ]);
+    }
+
+    return this.computeAnchoredPosition(view);
+  }
+
+  // find a note's position relative to an anchor point and direction, for the current zoom
+  computeAnchoredPosition (view) {
+    // keep text note at a variable pixel distance from the anchor point based on its size
     let pixelDist = elementRadius(this.textElement) * 0.85;
 
     // but taper the distance as you zoom out from the scale the text note was placed in
@@ -256,19 +300,12 @@ export default class HubTextNote {
     const zoomDiff = Math.min(Math.max(this.initialZoom - view.zoom, 0), zoomDecreaseRange);
     pixelDist *= 1 - (zoomDiff / zoomDecreaseRange) * zoomDecreaseFactor;
 
-    const lineDist = view.resolution * pixelDist;
+    const mapDist = view.resolution * pixelDist; // distance in map units
     const textPoint = {
-      x: this.anchor.x + this.vector[0] * lineDist * -1,
-      y: this.anchor.y + this.vector[1] * lineDist * -1
+      x: this.anchor.x - this.vector[0] * mapDist,
+      y: this.anchor.y - this.vector[1] * mapDist
     };
     return textPoint;
-  }
-
-  placePolygonNote () {
-    if (!this.anchor) {
-      this.anchor = this.graphic.geometry.centroid;
-    }
-    return this.anchor.clone();
   }
 
   // convert text note to an approximate TextSymbol representation
