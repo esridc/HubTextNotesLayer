@@ -20,8 +20,8 @@ export default class HubTextNote {
   static Point = Point;
   static geometryEngine = geometryEngine;
 
-  constructor ({ id, editable = false, graphic, text = '', textPlaceholder = '', textClass, placeNearPoint, onNoteEvent }) {
-    Object.assign(this, { id, editable, graphic, text, textPlaceholder, textClass, placeNearPoint });
+  constructor ({ id, editable = false, graphic, text = '', textPlaceholder = '', textClass, placementHint, onNoteEvent }) {
+    Object.assign(this, { id, editable, graphic, text, textPlaceholder, textClass, placementHint });
     this.onNoteEvent = typeof onNoteEvent === 'function' ? onNoteEvent : function(){}; // provide an empty callback as fallback
     this.anchor = null; // a point on the graphic that the text note is positioned relative to
     this.mapPoint = null; // the current computed map point for the text note element
@@ -215,7 +215,7 @@ export default class HubTextNote {
   placeLineNote (view) {
     if (!this.anchor) { // find placement anchor and vector if this is the first time placing the note
       const line = this.graphic.geometry;
-      let nearPoint = this.placeNearPoint;
+      let nearPoint = this.placementHint;
 
       // if no "hint" location for note placement was provided, choose one based on geometry
       if (!nearPoint) {
@@ -253,7 +253,7 @@ export default class HubTextNote {
   placePolygonNote (view) {
     if (!this.anchor) { // find placement anchor and vector if this is the first time placing the note
       const polygon = this.graphic.geometry;
-      let nearPoint = this.placeNearPoint;
+      let nearPoint = this.placementHint;
 
       // if no "hint" location for note placement was provided, choose one based on geometry
       if (!nearPoint) {
