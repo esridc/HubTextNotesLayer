@@ -114,6 +114,7 @@ export default class HubTextNote {
       }
 
       this.text = this.textElement.innerText; // update current text
+      this.updatePosition(view);
       this.onNoteEvent('update-text', this, event);
     });
 
