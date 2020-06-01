@@ -1,6 +1,6 @@
 {
   "name": "hub-text-notes-layer",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Custom JSAPI layer for Hub text notes",
   "main": "HubTextNotesLayer.js",
   "scripts": {
