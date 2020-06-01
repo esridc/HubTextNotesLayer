@@ -194,7 +194,7 @@ export default class HubTextNote {
 
   placePointNote (view) {
     if (!this.anchor) { // find placement anchor if this is the first time placing the note
-      this.anchor = this.graphic.geometry;
+      this.anchor = this.graphic.geometry.clone();
       this.buffer = 3; // space in pixels between marker and note
     }
 
@@ -264,13 +264,15 @@ export default class HubTextNote {
           nearPoint = {
             type: 'point',
             x: (extent.xmin + extent.xmax) / 2,
-            y: extent.ymin
+            y: extent.ymin,
+            spatialReference: polygon.spatialReference
           };
         } else { // if taller, place near right side
           nearPoint = {
             type: 'point',
             x: extent.xmax,
-            y: (extent.ymin + extent.ymax) / 2
+            y: (extent.ymin + extent.ymax) / 2,
+            spatialReference: polygon.spatialReference
           };
         }
       }
@@ -278,7 +280,8 @@ export default class HubTextNote {
       // place along the polygon's outer ring
       const ring = {
         type: 'polyline',
-        paths: [polygon.rings[0]]
+        paths: [polygon.rings[0]],
+        spatialReference: polygon.spatialReference
       };
       this.anchor = HubTextNote.geometryEngine.nearestCoordinate(ring, nearPoint).coordinate;
       // point vector away from centroid so note is pushed "out" from polygon edge
