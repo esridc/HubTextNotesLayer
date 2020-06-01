@@ -296,20 +296,40 @@ export default class HubTextNote {
 
   // find a note's position relative to an anchor point and direction, for the current zoom
   computeAnchoredPosition (view) {
-    // keep text note at a variable pixel distance from the anchor point based on its size
-    let pixelDist = elementRadius(this.textElement) * 0.85;
+    const noteWidth = this.textElement.offsetWidth;
+    const noteHeight = this.textElement.offsetHeight;
+    let pixelDist = 15; // starting buffer distance to maintain between note and anchor point
 
-    // but taper the distance as you zoom out from the scale the text note was placed in
+    // taper the distance as you zoom out from the scale the text note was placed in
     const zoomDecreaseRange = 3; // at this number of zooms out from original text note placement
     const zoomDecreaseFactor = 0.5; // reduce the original text note distance by this %
     const zoomDiff = Math.min(Math.max(this.initialZoom - view.zoom, 0), zoomDecreaseRange);
     pixelDist *= 1 - (zoomDiff / zoomDecreaseRange) * zoomDecreaseFactor;
 
-    const mapDist = view.resolution * pixelDist; // distance in map units
+    // initial vector pointing away from anchor, converting pixels to map units
     const textPoint = {
-      x: this.anchor.x - this.vector[0] * mapDist,
-      y: this.anchor.y - this.vector[1] * mapDist
+      x: this.anchor.x - this.vector[0] * pixelDist * view.resolution,
+      y: this.anchor.y - this.vector[1] * pixelDist * view.resolution
     };
+
+    // then offset the note based on the directional octant of its placement vector
+    const octantOffsets = [
+      [1, 0], // east
+      [1, 1], // northeast
+      [0, 1], // north
+      [-1, 1], // northwest
+      [-1, 0], // west
+      [-1, -1], // southwest
+      [0, -1], // south
+      [1, -1] // southeast
+    ];
+
+    const angle = Math.atan2(this.vector[1], this.vector[0]);
+    const octant = Math.round(8 * angle / (Math.PI*2) + 8) % 8;
+
+    textPoint.x -= octantOffsets[octant][0] * noteWidth/2 * view.resolution;
+    textPoint.y -= octantOffsets[octant][1] * noteHeight/2 * view.resolution;
+
     return textPoint;
   }
 
@@ -370,14 +390,6 @@ function length (v) {
 function normalize (v) {
   const len = length(v);
   return len > 0 ? v.map(x => x / len) : v;
-}
-
-// radius of an element in pixels
-function elementRadius (e) {
-  const rect = e.getBoundingClientRect();
-  const dx = rect.width / 2;
-  const dy = rect.height / 2;
-  return Math.sqrt(dx * dx + dy * dy);
 }
 
 // convert points to pixels
