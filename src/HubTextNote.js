@@ -221,16 +221,17 @@ export default class HubTextNote {
       // if no "hint" location for note placement was provided, choose one based on geometry
       if (!nearPoint) {
         // use a simple average of the line's vertices as center (JSAPI doesn't have a line centerpoint out of the box)
-        const center = line.paths[0]
+        const centerCoords = line.paths[0]
           .reduce((a, b) => [a[0] + b[0], a[1] + b[1]], [0, 0])
           .map(p => p / line.paths[0].length);
 
-        this.anchor = {
+        const center = HubTextNote.Point({
           type: 'point',
-          spatialReference: { wkid: 102100, latestWkid: 3857 },
-          x: center[0],
-          y: center[1]
-        };
+          spatialReference: line.spatialReference,
+          x: centerCoords[0],
+          y: centerCoords[1]
+        });
+        this.anchor = HubTextNote.geometryEngine.nearestCoordinate(line, center).coordinate;
 
         // derive normal perpendicular to line from first to last point
         const first = line.paths[0][0];
