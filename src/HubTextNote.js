@@ -21,10 +21,14 @@ export default class HubTextNote {
   static geometryEngine = geometryEngine;
 
   constructor ({ id, editable = false, graphic, text = '', textPlaceholder = '', textClass, placementHint, onNoteEvent }) {
-    Object.assign(this, { id, editable, graphic, text, textPlaceholder, textClass, placementHint });
+    Object.assign(this, { id, editable, graphic, text, textPlaceholder, textClass });
     this.onNoteEvent = typeof onNoteEvent === 'function' ? onNoteEvent : function(){}; // provide an empty callback as fallback
     this.anchor = null; // a point on the graphic that the text note is positioned relative to
     this.mapPoint = null; // the current computed map point for the text note element
+    if (placementHint) {
+      // convert to Point instance if needed, so param will accept JSON or existing instance
+      this.placementHint = new HubTextNote.Point(placementHint);
+    }
   }
 
   destroy () {
