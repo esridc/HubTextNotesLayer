@@ -12,11 +12,11 @@ const HubTextNotesLayerView2D = BaseLayerView2D.createSubclass({
 
   attach () {
     // process any notes already in the layer
-    this.layer.hubNotes.forEach(note => this.addNoteTextElement(note));
+    this.layer.hubNotes.forEach(note => this.addNoteElements(note));
 
     // add event handlers
-    this._handles.push(this.layer.on('note-add', event => this.addNoteTextElement(event.note)));
-    this._handles.push(this.layer.on('note-select', () => this.setDirty(true)));
+    this._handles.push(this.layer.on('note-add', event => this.addNoteElements(event.note)));
+    this._handles.push(this.layer.on(['note-select', 'note-drag'], () => this.setDirty(true)));
     this._handles.push(this.view.watch('extent', () => this.setDirty(true)));
   },
 
@@ -31,8 +31,8 @@ const HubTextNotesLayerView2D = BaseLayerView2D.createSubclass({
     }
   },
 
-  addNoteTextElement (note) {
-    note.createTextElement(this.view);
+  addNoteElements (note) {
+    note.createElements(this.view);
     this.setDirty(true);
   },
 
@@ -57,7 +57,7 @@ const HubTextNotesLayerView2D = BaseLayerView2D.createSubclass({
   hitTest (x, y) {
     const notes = this.layer.hubNotes
       .filter(note => !note.hidden()) // ignore notes hidden by collision detection
-      .filter(note => note.textElement && elementContainsPoint(note.textElement, { x, y })); // point is inside note
+      .filter(note => note.container && elementContainsPoint(note.container, { x, y })); // point is inside note
 
     const graphic = notes[0] && new Graphic({
       geometry: notes[0].mapPoint, // TODO: add full note extent if deemed necessary

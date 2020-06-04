@@ -3,13 +3,25 @@ import * as Point from 'esri/geometry/Point';
 import { getFontSettings } from './fonts';
 
 // CSS classes added to text note elements to indicate hover and select states
+const NOTE_TEXT_CLASS = 'note-text';
 const NOTE_HOVER_CLASS = 'note-hover';
 const NOTE_SELECT_CLASS = 'note-select';
 
-// CSS applied to each text note element
-const NOTE_STYLE = `
+// CSS applied directly to each text note element
+// outer container, draggable
+const NOTE_CONTAINER_STYLE = `
   position: absolute; /* position notes relative to map container */
+`;
+
+// added when drag-drop is active
+const NOTE_DRAG_STYLE = `
+  cursor: grab;
+`;
+
+// inner element, editable text
+const NOTE_TEXT_STYLE = `
   -webkit-user-select: auto; /* mobile safari needs this for contenteditable to work properly */
+  cursor: auto;
 `;
 
 // Instances of HubTextNote manage an individual text note attached to a graphic, including handling text input
@@ -20,8 +32,8 @@ export default class HubTextNote {
   static Point = Point;
   static geometryEngine = geometryEngine;
 
-  constructor ({ id, editable = false, graphic, text = '', textPlaceholder = '', textClass, placementHint, onNoteEvent }) {
-    Object.assign(this, { id, editable, graphic, text, textPlaceholder, textClass });
+  constructor ({ id, editable = false, graphic, text = '', textPlaceholder = '', cssClass, placementHint, onNoteEvent }) {
+    Object.assign(this, { id, editable, graphic, text, textPlaceholder, cssClass });
     this.onNoteEvent = typeof onNoteEvent === 'function' ? onNoteEvent : function(){}; // provide an empty callback as fallback
     this.anchor = null; // a point on the graphic that the text note is positioned relative to
     this.mapPoint = null; // the current computed map point for the text note element
@@ -29,17 +41,21 @@ export default class HubTextNote {
       // convert to Point instance if needed, so param will accept JSON or existing instance
       this.placementHint = new HubTextNote.Point(placementHint);
     }
-    this._listeners = [];
+    this._listeners = []; // DOM event listeners
+    this._handles = []; // JSAPI handles
   }
 
   destroy () {
     this._listeners.forEach(([target, type, handler]) => target.removeEventListener(type, handler));
     this._listeners = [];
 
-    if (this.textElement) {
-      this.textElement.parentElement.removeChild(this.textElement);
-      this.textElement = null;
+    this._handles.forEach(handle => handle.remove());
+
+    if (this.container) {
+      this.container.parentElement.removeChild(this.container);
     }
+    this.container = null;
+    this.textElement = null;
   }
 
   addEventListener (target, type, handler) {
@@ -58,32 +74,39 @@ export default class HubTextNote {
   }
 
   hovered () {
-    return this.textElement && this.textElement.classList.contains(NOTE_HOVER_CLASS);
+    return this.container && this.container.classList.contains(NOTE_HOVER_CLASS);
   }
 
   selected () {
-    return this.textElement && this.textElement.classList.contains(NOTE_SELECT_CLASS);
+    return this.container && this.container.classList.contains(NOTE_SELECT_CLASS);
   }
 
   hidden () {
-    return this.textElement && parseFloat(this.textElement.style.opacity) === 0;
+    return this.container && parseFloat(this.container.style.opacity) === 0;
+  }
+
+  draggable () {
+    // points don't yet have drag support (need to determine best behavior)
+    return this.editable && this.graphic.geometry.type !== 'point';
   }
 
   setVisibility (state) {
-    if (this.textElement) {
+    if (this.container) {
       // TODO: consider allowing user-specified CSS class, might keep occluded notes visible but faded (e.g. opacity 50%)
+      this.container.style.opacity = state ? 1 : 0;
+      this.container.style.pointerEvents = state ? 'auto' : 'none';
       this.textElement.style.opacity = state ? 1 : 0;
       this.textElement.style.pointerEvents = state ? 'auto' : 'none';
     }
   }
 
   setHover (state) {
-    if (this.textElement) {
+    if (this.container) {
       const hovered = this.hovered();
       if (state) {
-        this.textElement.classList.add(NOTE_HOVER_CLASS);
+        this.container.classList.add(NOTE_HOVER_CLASS);
       } else {
-        this.textElement.classList.remove(NOTE_HOVER_CLASS);
+        this.container.classList.remove(NOTE_HOVER_CLASS);
       }
 
       if (state !== hovered) {
@@ -94,11 +117,11 @@ export default class HubTextNote {
 
   setSelect (state) {
     const selected = this.selected();
-    if (this.textElement) {
+    if (this.container) {
       if (state) {
-        this.textElement.classList.add(NOTE_SELECT_CLASS);
+        this.container.classList.add(NOTE_SELECT_CLASS);
       } else {
-        this.textElement.classList.remove(NOTE_SELECT_CLASS);
+        this.container.classList.remove(NOTE_SELECT_CLASS);
       }
 
       if (state !== selected) {
@@ -107,17 +130,37 @@ export default class HubTextNote {
     }
   }
 
-  createTextElement (view) {
-    // setup note element
+  setDrag (state) {
+    this.dragging = state;
+    this.hasDragged = false; // reset
+    if (this.dragging) {
+      // save current cursor and activate drag cursor
+      this.prevCursor = document.body.style.cursor;
+      this.container.style.cursor = 'grabbing';
+      document.body.style.cursor = 'grabbing';
+    } else {
+      this.container.style.cursor = 'grab';
+      document.body.style.cursor = this.prevCursor; // restore cursor
+    }
+  }
+
+  createElements (view) {
+    // setup outer note element, which is draggable (when editing is enable)
+    this.container = document.createElement('div');
+    this.container.style = `${NOTE_CONTAINER_STYLE} ${this.draggable() ? NOTE_DRAG_STYLE : ''}`;
+    if (this.cssClass) {
+      this.container.classList.add(this.cssClass); // apply user-supplied style
+    }
+
+    // setup inner note element, which is contenteditable
     this.textElement = document.createElement('div');
     this.textElement.contentEditable = this.editable;
     this.textElement.innerText = this.text;
     this.textElement.setAttribute('data-placeholder', this.textPlaceholder);
     this.textElement.tabIndex = 1;
-    if (this.textClass) {
-      this.textElement.classList.add(this.textClass); // apply user-supplied style
-    }
-    this.textElement.style = NOTE_STYLE; // apply non-visual properties
+    this.textElement.style = NOTE_TEXT_STYLE; // apply non-visual properties
+    this.textElement.classList.add(NOTE_TEXT_CLASS);
+    this.container.appendChild(this.textElement);
 
     this.addEventListener(this.textElement, 'input', event => {
       // exit edit mode when a user hits enter
@@ -133,35 +176,68 @@ export default class HubTextNote {
 
     this.addEventListener(this.textElement, 'paste', event => this.onPasteEvent(event, view));
 
-    // we don't want these events interfering with the underlying map view
-    ['keydown', 'keyup', 'pointerdown', 'pointerup', 'click'].forEach(type => {
-      this.addEventListener(this.textElement, type, e => e.stopPropagation());
+    [this.textElement, this.container].forEach(element => {
+      // we don't want these events interfering with the underlying map view
+      ['keydown', 'keyup', 'pointerdown', 'pointerup', 'click'].forEach(type => {
+        this.addEventListener(element, type, e => e.stopPropagation());
+      });
+
+      // suppress hover events over note from bubbling to map view
+      this.addEventListener(element, 'pointermove', (event) => {
+        if (!this.dragging && (this.selected() || this.hovered())) {
+          event.stopPropagation();
+        }
+      });
+
+      this.addEventListener(element, 'focus', (event) => {
+        if (this.hidden()) {
+          event.stopPropagation();
+          this.textElement.blur();
+        } else {
+          this.onNoteEvent('focus', this, event);
+        }
+      });
+
+      this.addEventListener(element, 'blur', (event) => {
+        // update position and empty check on blur
+        this.empty = (!this.textElement.innerText || this.textElement.innerText.length === 0);
+        this.setHover(false);
+        this.updatePosition(view);
+        this.onNoteEvent('blur', this, event);
+      });
     });
 
-    this.addEventListener(this.textElement, 'pointermove', (event) => {
-      if (this.selected() || this.hovered()) {
-        event.stopPropagation();
-      }
-    });
+    // add drag event handling when editing is enabled
+    if (this.draggable()) {
+      // start dragging when pressing on the outer container area
+      // stop dragging when pressing the inner note area, or releasing elsewhere on screen
+      this.addEventListener(this.container, 'pointerdown', () => this.setDrag(true));
+      this.addEventListener(this.textElement, 'pointerdown', () => this.setDrag(false));
 
-    this.addEventListener(this.textElement, 'focus', (event) => {
-      if (this.hidden()) {
-        event.stopPropagation();
-        this.textElement.blur();
-      } else {
-        this.onNoteEvent('focus', this, event);
-      }
-    });
+      this.addEventListener(this.container, 'pointerup', () => {
+        const wasDragged = this.hasDragged;
+        this.setDrag(false);
+        if (!wasDragged) {
+          this.focus(); // focus the note when the outer container is clicked, if not ending a drag
+        }
+      });
+      this.addEventListener(this.textElement, 'pointerup', () => this.setDrag(false));
 
-    this.addEventListener(this.textElement, 'blur', (event) => {
-      // update position and empty check on blur
-      this.empty = (!this.textElement.innerText || this.textElement.innerText.length === 0);
-      this.setHover(false);
-      this.updatePosition(view);
-      this.onNoteEvent('blur', this, event);
-    });
+      this.addEventListener(window, 'pointerup', () => this.setDrag(false));
+      this.addEventListener(window, 'pointerleave', () => this.setDrag(false));
 
-    view.surface.appendChild(this.textElement); // add to view DOM
+      // when dragging the note in the map view, re-calculate its position (constrained by the graphic)
+      this._handles.push(view.on('pointer-move', event => {
+        if (this.dragging) {
+          this.hasDragged = true;
+          this.anchor = null;
+          this.placementHint = view.toMap(event); // place closest to current pointer location
+          this.onNoteEvent('drag', this, event);
+        }
+      }));
+    }
+
+    view.surface.appendChild(this.container); // add to view DOM
     this.updatePosition(view);
   }
 
@@ -187,8 +263,10 @@ export default class HubTextNote {
 
   // Update text note position in world space and screenspace
   updatePosition (view) {
-    this.updateMapPoint(view);
-    this.updateTextElement(view);
+    if (this.updateMapPoint(view)) {
+      this.updateTextElement(view);
+      this.onNoteEvent('update-position', this, { type: 'update-position' });
+    }
   }
 
   // Update position of the HTML div in screenspace
@@ -196,13 +274,13 @@ export default class HubTextNote {
     if (!view.ready) return;
     const point = view.toScreen(this.mapPoint);
 
-    point.x -= this.textElement.offsetWidth / 2;
-    point.y -= this.textElement.offsetHeight / 2;
+    point.x -= this.container.offsetWidth / 2;
+    point.y -= this.container.offsetHeight / 2;
     point.x = Math.round(point.x);
     point.y = Math.round(point.y);
 
-    this.textElement.style.left = `${point.x}px`;
-    this.textElement.style.top = `${point.y}px`;
+    this.container.style.left = `${point.x}px`;
+    this.container.style.top = `${point.y}px`;
   }
 
   // Re-compute the position of the text note on the map, relative to its graphic
@@ -220,11 +298,15 @@ export default class HubTextNote {
       point = this.placePolygonNote(view);
     }
 
+    const prevPoint = this.mapPoint && this.mapPoint.toJSON();
+
     this.mapPoint = new HubTextNote.Point({
       spatialReference: this.graphic.geometry.spatialReference,
       x: point.x,
       y: point.y
     });
+
+    return this.mapPoint.toJSON() !== prevPoint;
   }
 
   placePointNote (view) {
@@ -238,7 +320,7 @@ export default class HubTextNote {
         ? this.graphic.symbol.height // height from picture marker
         : (this.graphic.symbol.size + this.graphic.symbol.outline.width) // height from simple marker
     );
-    const elementHeight = this.textElement.offsetHeight; // height of text element
+    const elementHeight = this.container.offsetHeight; // height of text element
     const pixelDist = (graphicHeight + elementHeight) / 2 - this.graphic.symbol.yoffset + this.buffer;
     const textScreenPoint = view.toScreen(this.anchor);
     const textPoint = view.toMap({
@@ -331,8 +413,8 @@ export default class HubTextNote {
 
   // find a note's position relative to an anchor point and direction, for the current zoom
   computeAnchoredPosition (view) {
-    const noteWidth = this.textElement.offsetWidth;
-    const noteHeight = this.textElement.offsetHeight;
+    const noteWidth = this.container.offsetWidth;
+    const noteHeight = this.container.offsetHeight;
     let pixelDist = 15; // starting buffer distance to maintain between note and anchor point
 
     // taper the distance as you zoom out from the scale the text note was placed in
@@ -370,7 +452,12 @@ export default class HubTextNote {
 
   // convert text note to an approximate TextSymbol representation
   toGraphic (view) {
-    if (!this.textElement) return;
+    if (!this.text ||
+      !this.textElement ||
+      !this.mapPoint ||
+      !this.anchor) {
+      return;
+    }
 
     const textStyle = window.getComputedStyle(this.textElement);
 

@@ -9,8 +9,8 @@ const HubTextNotesLayer = Layer.createSubclass({
   declaredClass: 'HubTextNotesLayer',
   noteId: 0, // incrementing ide to uniquely identify notes in the layer
 
-  constructor ({ editable, textPlaceholder, textClass }) {
-    Object.assign(this, { editable, textPlaceholder, textClass });
+  constructor ({ editable, textPlaceholder, cssClass }) {
+    Object.assign(this, { editable, textPlaceholder, cssClass });
     this.hubNotes = [];
   },
 
@@ -37,7 +37,7 @@ const HubTextNotesLayer = Layer.createSubclass({
       graphic,
       text,
       textPlaceholder: this.textPlaceholder,
-      textClass: this.textClass,
+      cssClass: this.cssClass,
       placementHint,
       onNoteEvent: this.onNoteEvent.bind(this)
     });
@@ -69,14 +69,14 @@ const HubTextNotesLayer = Layer.createSubclass({
 
   setHoveredNoteForGraphic (graphic) {
     const hoverNote = this.findNoteForGraphic(graphic);
-    this.hubNotes.filter(note => note.textElement).forEach(note => {
+    this.hubNotes.filter(note => note.container).forEach(note => {
       note.setHover(note === hoverNote);
     });
   },
 
   setSelectedNoteForGraphic (graphic) {
     const selectNote = this.findNoteForGraphic(graphic);
-    this.hubNotes.filter(note => note.textElement).forEach(note => {
+    this.hubNotes.filter(note => note.container).forEach(note => {
       note.setSelect(note === selectNote);
     });
   },
@@ -87,7 +87,7 @@ const HubTextNotesLayer = Layer.createSubclass({
 
   // check notes for overlaps, and show/hide according to priority
   collideNotes () {
-    const notesWithEls = this.hubNotes.filter(note => note.textElement);
+    const notesWithEls = this.hubNotes.filter(note => note.container);
     const hidden = new Set();
     for (let a = 0; a < notesWithEls.length; a++) {
       const noteA = notesWithEls[a];
@@ -99,7 +99,7 @@ const HubTextNotesLayer = Layer.createSubclass({
         const noteB = notesWithEls[b];
 
         // check for overlap of rendered DOM rects in screenspace
-        if (elementsIntersect(noteA.textElement, noteB.textElement)) {
+        if (elementsIntersect(noteA.container, noteB.container)) {
           // keep notes in priority of: focused (active editing), selected, hovered, most recently added
           // keep focused note, or the most recently added one
           if (noteA.focused()) {
