@@ -29,13 +29,22 @@ export default class HubTextNote {
       // convert to Point instance if needed, so param will accept JSON or existing instance
       this.placementHint = new HubTextNote.Point(placementHint);
     }
+    this._listeners = [];
   }
 
   destroy () {
+    this._listeners.forEach(([target, type, handler]) => target.removeEventListener(type, handler));
+    this._listeners = [];
+
     if (this.textElement) {
       this.textElement.parentElement.removeChild(this.textElement);
+      this.textElement = null;
     }
-    // TODO: destroy event listeners
+  }
+
+  addEventListener (target, type, handler) {
+    target.addEventListener(type, handler);
+    this._listeners.push([target, type, handler]);
   }
 
   focus () {
@@ -110,7 +119,7 @@ export default class HubTextNote {
     }
     this.textElement.style = NOTE_STYLE; // apply non-visual properties
 
-    this.textElement.addEventListener('input', event => {
+    this.addEventListener(this.textElement, 'input', event => {
       // exit edit mode when a user hits enter
       if ((event.inputType === 'insertText' || event.inputType === 'insertParagraph') && event.data == null) {
         this.textElement.innerText = this.text; // revert to text before line break
@@ -122,20 +131,20 @@ export default class HubTextNote {
       this.onNoteEvent('update-text', this, event);
     });
 
-    this.textElement.addEventListener('paste', event => this.onPasteEvent(event, view));
+    this.addEventListener(this.textElement, 'paste', event => this.onPasteEvent(event, view));
 
     // we don't want these events interfering with the underlying map view
     ['keydown', 'keyup', 'pointerdown', 'pointerup', 'click'].forEach(type => {
-      this.textElement.addEventListener(type, e => e.stopPropagation());
+      this.addEventListener(this.textElement, type, e => e.stopPropagation());
     });
 
-    this.textElement.addEventListener('pointermove', (event) => {
+    this.addEventListener(this.textElement, 'pointermove', (event) => {
       if (this.selected() || this.hovered()) {
         event.stopPropagation();
       }
     });
 
-    this.textElement.addEventListener('focus', (event) => {
+    this.addEventListener(this.textElement, 'focus', (event) => {
       if (this.hidden()) {
         event.stopPropagation();
         this.textElement.blur();
@@ -144,7 +153,7 @@ export default class HubTextNote {
       }
     });
 
-    this.textElement.addEventListener('blur', (event) => {
+    this.addEventListener(this.textElement, 'blur', (event) => {
       // update position and empty check on blur
       this.empty = (!this.textElement.innerText || this.textElement.innerText.length === 0);
       this.setHover(false);
