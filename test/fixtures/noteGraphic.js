@@ -1,7 +1,8 @@
 export default {
   "geometry": {
     "spatialReference": {
-      "wkid": 4326
+      "latestWkid": 3857,
+      "wkid": 102100
     },
     "x": -8561599.265341949,
     "y": 4707804.194556565
@@ -30,8 +31,8 @@ export default {
     ],
     "horizontalAlignment": "center",
     "verticalAlignment": "middle",
-    "xoffset": 0,
-    "yoffset": 0
+    "xoffset": 0.07495673652738333,
+    "yoffset": 0.00254709180444479
   },
   "attributes": {
     "text": "this is a test note"
