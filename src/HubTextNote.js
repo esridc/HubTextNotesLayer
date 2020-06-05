@@ -122,6 +122,8 @@ export default class HubTextNote {
       this.onNoteEvent('update-text', this, event);
     });
 
+    this.textElement.addEventListener('paste', event => this.onPasteEvent(event, view));
+
     // we don't want these events interfering with the underlying map view
     ['keydown', 'keyup', 'pointerdown', 'pointerup', 'click'].forEach(type => {
       this.textElement.addEventListener(type, e => e.stopPropagation());
@@ -152,6 +154,26 @@ export default class HubTextNote {
 
     view.surface.appendChild(this.textElement); // add to view DOM
     this.updatePosition(view);
+  }
+
+  // handle paste events
+  onPasteEvent (event, view) {
+    event.stopPropagation();
+    event.preventDefault();
+
+    // get the plain text version of pasted content, and insert it at the current cursor position
+    // TODO: should this be an option in the future, e.g. if the clients wants to accept HTML?
+    const pastedData = (event.clipboardData || window.clipboardData).getData('Text');
+    const selection = window.getSelection();
+    const range = selection.getRangeAt(0);
+    if (range) {
+      range.insertNode(document.createTextNode(pastedData));
+    }
+    selection.removeAllRanges(); // de-select text
+
+    this.text = this.textElement.innerText; // update current text
+    this.updatePosition(view);
+    this.onNoteEvent('update-text', this, event);
   }
 
   // Update text note position in world space and screenspace
