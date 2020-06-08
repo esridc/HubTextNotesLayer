@@ -130,17 +130,20 @@ export default class HubTextNote {
     }
   }
 
-  setDrag (state) {
+  setDrag (state, view) {
     this.dragging = state;
     this.wasDragged = false; // reset
     if (this.dragging) {
       // save current cursor and activate drag cursor
-      this.prevCursor = document.body.style.cursor;
+      this.prevCursor = view.cursor;
       this.container.style.cursor = 'grabbing';
-      document.body.style.cursor = 'grabbing';
+      this.textElement.style.cursor = 'inherit';
+      view.cursor = 'grabbing';
     } else {
+      // restore cursors
       this.container.style.cursor = 'grab';
-      document.body.style.cursor = this.prevCursor; // restore cursor
+      this.textElement.style.cursor = 'auto';
+      view.cursor = this.prevCursor;
     }
   }
 
@@ -195,19 +198,19 @@ export default class HubTextNote {
     if (this.draggable()) {
       // start dragging when pressing on the outer container area
       // stop dragging when pressing the inner note area, or releasing elsewhere on screen
-      this.addEventListener(this.container, 'pointerdown', () => this.setDrag(true));
-      this.addEventListener(this.textElement, 'pointerdown', () => this.setDrag(false));
+      this.addEventListener(this.container, 'pointerdown', () => this.setDrag(true, view));
+      this.addEventListener(this.textElement, 'pointerdown', () => this.setDrag(false, view));
 
       this.addEventListener(this.container, 'pointerup', () => {
         const wasDragged = this.wasDragged;
-        this.setDrag(false);
+        this.setDrag(false, view);
         if (!wasDragged) {
           this.focus(); // focus the note when the outer container is clicked, if not ending a drag
         }
       });
-      this.addEventListener(this.textElement, 'pointerup', () => this.setDrag(false));
-      this.addEventListener(window, 'pointerup', () => this.setDrag(false));
-      this.addEventListener(window, 'pointerleave', () => this.setDrag(false));
+      this.addEventListener(this.textElement, 'pointerup', () => this.setDrag(false, view));
+      this.addEventListener(window, 'pointerup', () => this.setDrag(false, view));
+      this.addEventListener(window, 'pointerleave', () => this.setDrag(false, view));
 
       // when dragging the note in the map view, re-calculate its position (constrained by the graphic)
       this._handles.push(view.on('pointer-move', event => {
