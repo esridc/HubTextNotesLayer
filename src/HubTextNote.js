@@ -13,12 +13,12 @@ const NOTE_CONTAINER_STYLE = `
   position: absolute; /* position notes relative to map container */
 `;
 
-// added when drag-drop is active
+// added to outer container when drag-drop is available
 const NOTE_DRAG_STYLE = `
   cursor: grab;
 `;
 
-// inner element, editable text
+// inner element, for editable text
 const NOTE_TEXT_STYLE = `
   -webkit-user-select: auto; /* mobile safari needs this for contenteditable to work properly */
   cursor: auto;
@@ -132,7 +132,7 @@ export default class HubTextNote {
 
   setDrag (state) {
     this.dragging = state;
-    this.hasDragged = false; // reset
+    this.wasDragged = false; // reset
     if (this.dragging) {
       // save current cursor and activate drag cursor
       this.prevCursor = document.body.style.cursor;
@@ -152,26 +152,28 @@ export default class HubTextNote {
       this.container.classList.add(this.cssClass); // apply user-supplied style
     }
 
-    // setup inner note element, which is contenteditable
+    // setup inner note element, which is provides editing capabilities (when enabled)
     this.textElement = document.createElement('div');
     this.textElement.contentEditable = this.editable;
     this.textElement.innerText = this.text;
     this.textElement.setAttribute('data-placeholder', this.textPlaceholder);
     this.textElement.tabIndex = 1;
-    this.textElement.style = NOTE_TEXT_STYLE; // apply non-visual properties
-    this.textElement.classList.add(NOTE_TEXT_CLASS);
+    this.textElement.style = NOTE_TEXT_STYLE;
+    this.textElement.classList.add(NOTE_TEXT_CLASS); // apply user-supplied style
     this.container.appendChild(this.textElement);
 
+    // add input-related event handlers
     this.addEventListener(this.textElement, 'input', event => this.onInputEvent(event, view));
     this.addEventListener(this.textElement, 'paste', event => this.onPasteEvent(event, view));
 
-    [this.textElement, this.container].forEach(element => {
+    // add general cursor/focus/blur event handlers
+    [this.container, this.textElement].forEach(element => {
       // we don't want these events interfering with the underlying map view
       ['keydown', 'keyup', 'pointerdown', 'pointerup', 'click'].forEach(type => {
         this.addEventListener(element, type, e => e.stopPropagation());
       });
 
-      // suppress hover events over note from bubbling to map view
+      // when we're already interacting w/the note, suppress hover events from bubbling to map view
       this.addEventListener(element, 'pointermove', (event) => {
         if (!this.dragging && (this.selected() || this.hovered())) {
           event.stopPropagation();
@@ -197,21 +199,20 @@ export default class HubTextNote {
       this.addEventListener(this.textElement, 'pointerdown', () => this.setDrag(false));
 
       this.addEventListener(this.container, 'pointerup', () => {
-        const wasDragged = this.hasDragged;
+        const wasDragged = this.wasDragged;
         this.setDrag(false);
         if (!wasDragged) {
           this.focus(); // focus the note when the outer container is clicked, if not ending a drag
         }
       });
       this.addEventListener(this.textElement, 'pointerup', () => this.setDrag(false));
-
       this.addEventListener(window, 'pointerup', () => this.setDrag(false));
       this.addEventListener(window, 'pointerleave', () => this.setDrag(false));
 
       // when dragging the note in the map view, re-calculate its position (constrained by the graphic)
       this._handles.push(view.on('pointer-move', event => {
         if (this.dragging) {
-          this.hasDragged = true;
+          this.wasDragged = true;
           this.anchor = null;
           this.placementHint = view.toMap(event); // place closest to current pointer location
           this.onNoteEvent('drag', this, event);
