@@ -162,18 +162,7 @@ export default class HubTextNote {
     this.textElement.classList.add(NOTE_TEXT_CLASS);
     this.container.appendChild(this.textElement);
 
-    this.addEventListener(this.textElement, 'input', event => {
-      // exit edit mode when a user hits enter
-      if ((event.inputType === 'insertText' || event.inputType === 'insertParagraph') && event.data == null) {
-        this.textElement.innerText = this.text; // revert to text before line break
-        this.textElement.blur();
-      }
-
-      this.text = this.textElement.innerText; // update current text
-      this.updatePosition(view);
-      this.onNoteEvent('update-text', this, event);
-    });
-
+    this.addEventListener(this.textElement, 'input', event => this.onInputEvent(event, view));
     this.addEventListener(this.textElement, 'paste', event => this.onPasteEvent(event, view));
 
     [this.textElement, this.container].forEach(element => {
@@ -239,6 +228,19 @@ export default class HubTextNote {
 
     view.surface.appendChild(this.container); // add to view DOM
     this.updatePosition(view);
+  }
+
+  // handle input events
+  onInputEvent (event, view) {
+    // exit edit mode when a user hits enter
+    if ((event.inputType === 'insertText' || event.inputType === 'insertParagraph') && event.data == null) {
+      this.textElement.innerText = this.text; // revert to text before line break
+      this.textElement.blur();
+    }
+
+    this.text = this.textElement.innerText; // update current text
+    this.updatePosition(view);
+    this.onNoteEvent('update-text', this, event);
   }
 
   // handle paste events
