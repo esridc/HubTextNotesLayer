@@ -179,19 +179,12 @@ export default class HubTextNote {
       });
 
       this.addEventListener(element, 'focus', (event) => {
-        if (this.hidden()) {
-          event.stopPropagation();
-          this.textElement.blur();
-        } else {
-          this.onNoteEvent('focus', this, event);
-        }
+        this.onNoteEvent('focus', this, event);
       });
 
       this.addEventListener(element, 'blur', (event) => {
-        // update position and empty check on blur
+        // only mark as empty on blur, because we don't want notes removed while they're being edited
         this.empty = (!this.textElement.innerText || this.textElement.innerText.length === 0);
-        this.setHover(false);
-        this.updatePosition(view);
         this.onNoteEvent('blur', this, event);
       });
     });
