@@ -20,20 +20,21 @@ describe('HubNote', () => {
 
   beforeEach(() => {
     view = createView();
-    note = new HubTextNote({ graphic: polygonGraphic, text: 'this is a test note', textClass: 'map-note' });
-    note.createTextElement(view);
-    document.body.appendChild(note.textElement); // needs to be in DOM for some tests like focus
+    note = new HubTextNote({ graphic: polygonGraphic, text: 'this is a test note', cssClass: 'map-note' });
+    note.createElements(view);
+    document.body.appendChild(note.container); // needs to be in DOM for some tests like focus
   });
 
   afterEach(() => {
-    document.body.removeChild(note.textElement);
+    document.body.removeChild(note.container);
   });
 
   it('returns an new note instance', () => {
     assert.instanceOf(note, HubTextNote);
   });
 
-  it('creates a text element with expected values', () => {
+  it('creates a container and text element with expected values', () => {
+    assert.instanceOf(note.container, HTMLElement);
     assert.instanceOf(note.textElement, HTMLElement);
     assert.equal(note.text, 'this is a test note');
     assert.equal(note.textElement.innerText, 'this is a test note');

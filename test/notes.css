@@ -8,20 +8,48 @@
   max-width: 150px;
   min-width: 50px;
   opacity: 1;
-  padding: 10px 13px;
+  padding: 8px 11px;
   text-align: center;
+  word-break: break-word;
+  transition: all 125ms ease-in-out, left 0s, top 0s; /* don't animate position on map */
+  outline: 1px solid #CA2A8F;
+  transform: scale(1);
 }
 
+.map-note .note-text {
+  padding: 2px;
+}
+
+.map-note.note-select,
+.map-note.note-select.note-hover,
 .map-note.note-hover {
+  box-shadow: 1px 3px 35px rgba(0, 0, 0, 0.3);
+  outline-color: #DB0DAB;
+  outline-width: 1px;
+  outline-style: solid;
+  transform: scale(1.075);
+  transition: all .15s ease-in-out, left 0s, top 0s; /* don't animate position on map */
+}
+
+.map-note.note-select,
+.map-note.note-select.note-hover {
+  outline-width: 3px;
+}
+
+.map-note .note-hover {
   border: 1px solid rgb(0, 137, 255);
 }
 
-.map-note.note-select {
+.map-note .note-select {
   border: 1px solid rgb(0, 118, 201);
 }
 
+.note-hover {
+  outline-color: #0089ff;
+}
+
 /* simulates a placeholder attribute for contenteditable div */
-.map-note[contenteditable=true]:empty:before {
+.note-text[contenteditable=true]:empty:before {
   content: attr(data-placeholder);
   color: rgb(100, 100, 100);
   pointer-events: none;
