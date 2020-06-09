@@ -85,6 +85,11 @@ const HubTextNotesLayer = Layer.createSubclass({
     this.hubNotes.forEach(note => note.updatePosition(view));
   },
 
+  dragging () {
+    // is a text note currently being dragged
+    return this.hubNotes.filter(note => note.dragging).length > 0;
+  },
+
   // check notes for overlaps, and show/hide according to priority
   collideNotes () {
     const notesWithEls = this.hubNotes.filter(note => note.container);
