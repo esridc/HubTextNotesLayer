@@ -177,9 +177,11 @@ export default class HubTextNote {
       });
 
       // when we're already interacting w/the note, suppress hover events from bubbling to map view
+      // we *do* want to allow events while dragging, otherwise the note div blocks the drag
       this.addEventListener(element, 'pointermove', (event) => {
         if (!this.dragging && (this.selected() || this.hovered())) {
           event.stopPropagation();
+          event.preventDefault();
         }
       });
 
@@ -190,7 +192,11 @@ export default class HubTextNote {
       this.addEventListener(element, 'blur', (event) => {
         // only mark as empty on blur, because we don't want notes removed while they're being edited
         this.empty = (!this.textElement.innerText || this.textElement.innerText.length === 0);
-        this.onNoteEvent('blur', this, event);
+        // don't treat a blur when transitioning to a drag operation as a blur event extenrally (e.g. to the calling app)
+        // we don't want it to trigger other changes such as a de-selection of the shape
+        if (!this.dragging) {
+          this.onNoteEvent('blur', this, event);
+        }
       });
     });
 
