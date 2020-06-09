@@ -2,10 +2,12 @@ import * as geometryEngine from 'esri/geometry/geometryEngine';
 import * as Point from 'esri/geometry/Point';
 import { getFontSettings } from './fonts';
 
-// CSS classes added to text note elements to indicate hover and select states
-const NOTE_TEXT_CLASS = 'note-text';
-const NOTE_HOVER_CLASS = 'note-hover';
-const NOTE_SELECT_CLASS = 'note-select';
+// CSS classes added to text note elements to indicate various states, for user-provided styling
+// An explicit hover state is defined, instead of simply using :hover pseudo-selector, because a text note
+// will hover in conjunction with its attached graphic, when either is hovered.
+const NOTE_TEXT_CLASS = 'note-text'; // style the text div, which may be contenteditable
+const NOTE_HOVER_CLASS = 'note-hover'; // style the hover state
+const NOTE_SELECT_CLASS = 'note-select'; // style the selected state
 
 // CSS applied directly to each text note element
 // outer container, draggable
@@ -218,15 +220,8 @@ export default class HubTextNote {
       this.addEventListener(window, 'pointerup', () => this.setDrag(false, view));
       this.addEventListener(window, 'pointerleave', () => this.setDrag(false, view));
 
-      // when dragging the note in the map view, re-calculate its position (constrained by the graphic)
-      this._handles.push(view.on('pointer-move', event => {
-        if (this.dragging) {
-          this.wasDragged = true;
-          this.anchor = null;
-          this.placementHint = view.toMap(event); // place closest to current pointer location
-          this.onNoteEvent('drag', this, event);
-        }
-      }));
+      // update note position
+      this._handles.push(view.on('pointer-move', event => this.onDragEvent(event, view)));
     }
 
     view.surface.appendChild(this.container); // add to view DOM
@@ -264,6 +259,16 @@ export default class HubTextNote {
     this.text = this.textElement.innerText; // update current text
     this.updatePosition(view);
     this.onNoteEvent('update-text', this, event);
+  }
+
+  // re-calculate note's position (constrained by the graphic) as it is dragged
+  onDragEvent (event, view) {
+    if (this.dragging) {
+      this.wasDragged = true;
+      this.anchor = null; // will be re-calculated on next update
+      this.placementHint = view.toMap(event); // place closest to the current pointer location
+      this.onNoteEvent('drag', this, event); // layer view will request a re-render
+    }
   }
 
   // Update text note position in world space and screenspace
