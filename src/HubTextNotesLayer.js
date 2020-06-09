@@ -105,9 +105,12 @@ const HubTextNotesLayer = Layer.createSubclass({
 
         // check for overlap of rendered DOM rects in screenspace
         if (elementsIntersect(noteA.container, noteB.container)) {
-          // keep notes in priority of: focused (active editing), selected, hovered, most recently added
-          // keep focused note, or the most recently added one
-          if (noteA.focused()) {
+          // keep notes in priority of: dragging, focused, selected, hovered, most recently added
+          if (noteA.dragging) {
+            hidden.add(noteB);
+          } else if (noteB.dragging) {
+            hidden.add(noteA);
+          } else if (noteA.focused()) {
             hidden.add(noteB);
           } else if (noteB.focused()) {
             hidden.add(noteA);
