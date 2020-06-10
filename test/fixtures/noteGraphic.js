@@ -24,10 +24,10 @@ export default {
     },
     "haloSize": 2,
     "haloColor": [
-      0,
-      0,
-      0,
-      0
+      255,
+      255,
+      255,
+      242.25
     ],
     "horizontalAlignment": "center",
     "verticalAlignment": "middle",
