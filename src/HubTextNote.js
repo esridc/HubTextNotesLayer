@@ -34,7 +34,29 @@ export default class HubTextNote {
   static Point = Point;
   static geometryEngine = geometryEngine;
 
-  constructor ({ id, editable = false, graphic, text = '', textPlaceholder = '', cssClass, placementHint, onNoteEvent }) {
+  static octantOffsets = [
+    [1, 0], // right
+    [1, 1], // top-right
+    [0, 1], // top
+    [-1, 1], // top-left
+    [-1, 0], // left
+    [-1, -1], // bottom-left
+    [0, -1], // bottom
+    [1, -1] // bottom-right
+  ];
+
+  static alignmentOctants = {
+    'right': 0,
+    'top-right': 1,
+    'top': 2,
+    'top-left': 3,
+    'left': 4,
+    'bottom-left': 5,
+    'bottom': 6,
+    'bottom-right': 7
+  };
+
+  constructor ({ id, editable = false, graphic, text = '', textPlaceholder = '', cssClass, placementHint, placementAlignments, onNoteEvent }) {
     Object.assign(this, { id, editable, graphic, text, textPlaceholder, cssClass });
     this.onNoteEvent = typeof onNoteEvent === 'function' ? onNoteEvent : function(){}; // provide an empty callback as fallback
     this.anchor = null; // a point on the graphic that the text note is positioned relative to
@@ -43,6 +65,7 @@ export default class HubTextNote {
       // convert to Point instance if needed, so param will accept JSON or existing instance
       this.placementHint = new HubTextNote.Point(placementHint);
     }
+    this.placementAlignments = placementAlignments || Object.keys(HubTextNote.alignmentOctants); // default to all alignments
     this._listeners = []; // DOM event listeners
     this._handles = []; // JSAPI handles
   }
@@ -88,8 +111,7 @@ export default class HubTextNote {
   }
 
   draggable () {
-    // points don't yet have drag support (need to determine best behavior)
-    return this.editable && this.graphic.geometry.type !== 'point';
+    return this.editable === true;
   }
 
   setVisibility (state) {
@@ -320,28 +342,59 @@ export default class HubTextNote {
   }
 
   placePointNote (view) {
-    if (!this.anchor) { // find placement anchor if this is the first time placing the note
+    if (!this.anchor) { // set placement anchor if this is the first time placing the note
       this.anchor = this.graphic.geometry.clone();
-      this.buffer = 3; // space in pixels between marker and note
+      this.buffer = [6, 3]; // space in pixels between marker and note
     }
 
-    const graphicHeight = pt2px(
-      this.graphic.symbol.type === 'picture-marker'
-        ? this.graphic.symbol.height // height from picture marker
-        : (this.graphic.symbol.size + this.graphic.symbol.outline.width) // height from simple marker
-    );
-    const elementHeight = this.container.offsetHeight; // height of text element
-    const pixelDist = (graphicHeight + elementHeight) / 2 - this.graphic.symbol.yoffset + this.buffer;
-    const textScreenPoint = view.toScreen(this.anchor);
-    const textPoint = view.toMap({
-      x: textScreenPoint.x,
-      y: textScreenPoint.y + pixelDist
+    // get note and marker size
+    const noteSize = [this.container.offsetWidth, this.container.offsetHeight];
+    const symbol = this.graphic.symbol;
+    const graphicSize = symbol.type === 'picture-marker' ?
+      [pt2px(symbol.width), pt2px(symbol.height)] : // width/height from picture marker
+      [pt2px(symbol.size + symbol.outline.width), pt2px(symbol.size + symbol.outline.width)]; // size from simple marker
+
+    // get candidate locations for note based on configured alignment options
+    const candidates = this.placementAlignments.map(alignment => {
+      // get current screen position and adjust center-point for symbol's offset
+      const textScreenPoint = view.toScreen(this.anchor);
+      textScreenPoint.x -= symbol.xoffset;
+      textScreenPoint.y -= symbol.yoffset;
+
+      // move the position in the offset direction using its current dimensions and desired buffer
+      const offset = HubTextNote.octantOffsets[HubTextNote.alignmentOctants[alignment]];
+      textScreenPoint.x += offset[0] * ((graphicSize[0] + noteSize[0]) / 2 + this.buffer[0]);
+      textScreenPoint.y -= offset[1] * ((graphicSize[1] + noteSize[1]) / 2 + this.buffer[1]);
+
+      // convert back to map coords and get distance from hint location
+      const textPoint = view.toMap(textScreenPoint);
+      const dist = this.placementHint ? length([
+        textPoint.x - this.placementHint.x,
+        textPoint.y - this.placementHint.y
+      ]) : 0;
+
+      return { alignment, textPoint, dist };
     });
-    return textPoint;
+
+    // don't snap to a new alignment while the user is editing (note is focused)
+    if (!this.lastAlignment || !this.focused()) {
+      if (!this.placementHint) { // if no hint provided, just use first alignment
+        this.lastAlignment = this.placementAlignments[0];
+      } else {
+        // find candidate closest to placement hint
+        const [closest] = candidates.sort((a, b) => a.dist === b.dist ? 1 : a.dist - b.dist);
+        this.lastAlignment = closest.alignment;
+      }
+    }
+
+    // return current location
+    const location = candidates.find(c => c.alignment === this.lastAlignment) || candidates[0];
+    return location.textPoint;
   }
 
   placeLineNote (view) {
-    if (!this.anchor) { // find placement anchor and vector if this is the first time placing the note
+    // find placement anchor and vector if new note location is being calculated (first placement, or being dragged))
+    if (!this.anchor) {
       const line = this.graphic.geometry;
       let nearPoint = this.placementHint;
 
@@ -380,7 +433,8 @@ export default class HubTextNote {
   }
 
   placePolygonNote (view) {
-    if (!this.anchor) { // find placement anchor and vector if this is the first time placing the note
+    // find placement anchor and vector if new note location is being calculated (first placement, or being dragged))
+    if (!this.anchor) {
       const polygon = this.graphic.geometry;
       let nearPoint = this.placementHint;
 
@@ -423,8 +477,7 @@ export default class HubTextNote {
 
   // find a note's position relative to an anchor point and direction, for the current zoom
   computeAnchoredPosition (view) {
-    const noteWidth = this.container.offsetWidth;
-    const noteHeight = this.container.offsetHeight;
+    const noteSize = [this.container.offsetWidth, this.container.offsetHeight];
     let pixelDist = 15; // starting buffer distance to maintain between note and anchor point
 
     // taper the distance as you zoom out from the scale the text note was placed in
@@ -439,23 +492,15 @@ export default class HubTextNote {
       y: this.anchor.y - this.vector[1] * pixelDist * view.resolution
     };
 
-    // then offset the note based on the directional octant of its placement vector
-    const octantOffsets = [
-      [1, 0], // east
-      [1, 1], // northeast
-      [0, 1], // north
-      [-1, 1], // northwest
-      [-1, 0], // west
-      [-1, -1], // southwest
-      [0, -1], // south
-      [1, -1] // southeast
-    ];
 
+    // then offset the note based on the directional octant of its placement vector
     const angle = Math.atan2(this.vector[1], this.vector[0]);
     const octant = Math.round(8 * angle / (Math.PI*2) + 8) % 8;
+    const offset = HubTextNote.octantOffsets[octant];
 
-    textPoint.x -= octantOffsets[octant][0] * noteWidth/2 * view.resolution;
-    textPoint.y -= octantOffsets[octant][1] * noteHeight/2 * view.resolution;
+    textPoint.x -= offset[0] * noteSize[0]/2 * view.resolution;
+    textPoint.y -= offset[1] * noteSize[1]/2 * view.resolution;
+
 
     return textPoint;
   }
