@@ -515,11 +515,15 @@ export default class HubTextNote {
     }
 
     const textStyle = window.getComputedStyle(this.textElement);
+    const containerStyle = window.getComputedStyle(this.container);
 
     // get font colors from text element
     // use text element background color as font halo color, because JSAPI TextSymbol doesn't support background color
     const textColor = convertElementColorProperty(textStyle, 'color') || [0, 0, 0, 255];
-    const textBackgroundColor = convertElementColorProperty(textStyle, 'backgroundColor') || [255, 255, 255, 255];
+    let textBackgroundColor = convertElementColorProperty(textStyle, 'backgroundColor');
+    if (!textBackgroundColor || textBackgroundColor[3] === 0) { // fallback to container background color
+      textBackgroundColor = convertElementColorProperty(containerStyle, 'backgroundColor') || textColor;
+    }
     const textHasBackgroundColor = textColor.some((c, i) => textBackgroundColor[i] !== c); // is the background color different?
 
     // apply font defaults where needed for TextSymbol compatibility
