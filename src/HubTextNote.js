@@ -295,8 +295,9 @@ export default class HubTextNote {
 
   // Update text note position in world space and screenspace
   updatePosition (view) {
-    if (this.updateMapPoint(view)) {
-      this.updateTextElement(view);
+    const changed = this.updateMapPoint(view);
+    this.updateTextElement(view);
+    if (changed) {
       this.onNoteEvent('update-position', this, { type: 'update-position' });
     }
   }
@@ -330,7 +331,7 @@ export default class HubTextNote {
       point = this.placePolygonNote(view);
     }
 
-    const prevPoint = this.mapPoint && this.mapPoint.toJSON();
+    const prevPoint = JSON.stringify(this.mapPoint && this.mapPoint.toJSON());
 
     this.mapPoint = new HubTextNote.Point({
       spatialReference: this.graphic.geometry.spatialReference,
@@ -338,7 +339,7 @@ export default class HubTextNote {
       y: point.y
     });
 
-    return this.mapPoint.toJSON() !== prevPoint;
+    return JSON.stringify(this.mapPoint.toJSON()) !== prevPoint;
   }
 
   placePointNote (view) {
