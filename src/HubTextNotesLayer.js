@@ -92,14 +92,14 @@ const HubTextNotesLayer = Layer.createSubclass({
     return this.hubNotes.filter(note => note.dragging).length > 0;
   },
 
-  // check notes for overlaps, and show/hide according to priority
+  // check notes for overlaps, and mark as occluded according to priority
   collideNotes () {
     const notesWithEls = this.hubNotes.filter(note => note.container);
-    const hidden = new Set();
+    const occluded = new Set();
     for (let a = 0; a < notesWithEls.length; a++) {
       const noteA = notesWithEls[a];
-      if (hidden.has(noteA)) {
-        continue; // skip to-be-hidden elements
+      if (occluded.has(noteA)) {
+        continue; // skip to-be-occluded elements
       }
 
       for (let b = a + 1; b < notesWithEls.length; b++) {
@@ -109,31 +109,30 @@ const HubTextNotesLayer = Layer.createSubclass({
         if (elementsIntersect(noteA.container, noteB.container)) {
           // keep notes in priority of: dragging, focused, selected, hovered, most recently added
           if (noteA.dragging) {
-            hidden.add(noteB);
+            occluded.add(noteB);
           } else if (noteB.dragging) {
-            hidden.add(noteA);
+            occluded.add(noteA);
           } else if (noteA.focused()) {
-            hidden.add(noteB);
+            occluded.add(noteB);
           } else if (noteB.focused()) {
-            hidden.add(noteA);
+            occluded.add(noteA);
           } else if (noteA.selected()) {
-            hidden.add(noteB);
+            occluded.add(noteB);
           } else if (noteB.selected()) {
-            hidden.add(noteA);
+            occluded.add(noteA);
           // NOTE: disable hover priority for now and revisit, can be too distracting/frustrating with many notes
-          // } else if (noteA.hovered()) {
-          //   hidden.add(noteB);
-          // } else if (noteB.hovered()) {
-          //   hidden.add(noteA);
+          } else if (noteA.hovered()) {
+            occluded.add(noteB);
+          } else if (noteB.hovered()) {
+            occluded.add(noteA);
           } else {
-            hidden.add(a >= b ? noteB : noteA);
+            occluded.add(a >= b ? noteB : noteA);
           }
         }
       }
     }
 
-    // hide/show each note
-    this.hubNotes.forEach(note => note.setVisibility(!hidden.has(note)));
+    this.hubNotes.forEach(note => note.setOccluded(!occluded.has(note)));
   },
 
   // convert all notes to TextSymbol graphics

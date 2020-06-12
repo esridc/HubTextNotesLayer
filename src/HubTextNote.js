@@ -10,11 +10,13 @@ const NOTE_TEXT_CLASS = 'note-text'; // style the text div, which may be content
 const NOTE_HOVER_CLASS = 'note-hover'; // style the hover state
 const NOTE_SELECT_CLASS = 'note-select'; // style the selected state
 const NOTE_DRAGGING_CLASS = 'note-dragging'; // style note while dragging
+const NOTE_OCCLUDED_CLASS = 'note-occluded'; // style occluded notes
 
 // CSS applied directly to each text note element
 // outer container, draggable
 const NOTE_CONTAINER_STYLE = `
   position: absolute; /* position notes relative to map container */
+  z-index: 1; /* relatve to the note container */
 `;
 
 // added to outer container when drag-drop is available
@@ -123,21 +125,23 @@ export default class HubTextNote {
     return this.container && this.container.classList.contains(NOTE_SELECT_CLASS);
   }
 
-  hidden () {
-    return this.container && parseFloat(this.container.style.opacity) === 0;
+  occluded () {
+    return this.container && this.container.classList.contains(NOTE_OCCLUDED_CLASS);
   }
 
   draggable () {
     return this.editable === true;
   }
 
-  setVisibility (state) {
+  setOccluded (state) {
     if (this.container) {
-      // TODO: consider allowing user-specified CSS class, might keep occluded notes visible but faded (e.g. opacity 50%)
-      this.container.style.opacity = state ? 1 : 0;
-      this.container.style.pointerEvents = state ? 'auto' : 'none';
-      this.textElement.style.opacity = state ? 1 : 0;
-      this.textElement.style.pointerEvents = state ? 'auto' : 'none';
+      if (state) {
+        this.container.classList.remove(NOTE_OCCLUDED_CLASS);
+        this.container.style.zIndex = 1;
+      } else {
+        this.container.classList.add(NOTE_OCCLUDED_CLASS);
+        this.container.style.zIndex = 0;
+      }
     }
   }
 
@@ -190,7 +194,7 @@ export default class HubTextNote {
     }
   }
 
-  createElements (view) {
+  createElements (view, notesContainer) {
     // setup outer note element, which is draggable (when editing is enable)
     this.container = document.createElement('div');
     this.container.style = `${NOTE_CONTAINER_STYLE} ${this.draggable() ? NOTE_DRAGGABLE_STYLE : ''}`;
@@ -266,7 +270,7 @@ export default class HubTextNote {
       this._handles.push(view.on('pointer-move', event => this.onDragEvent(event, view)));
     }
 
-    view.surface.appendChild(this.container); // add to view DOM
+    notesContainer.appendChild(this.container);
     this.updatePosition(view);
   }
 
