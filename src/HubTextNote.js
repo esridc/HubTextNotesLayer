@@ -27,6 +27,20 @@ const NOTE_TEXT_STYLE = `
   cursor: auto;
 `;
 
+// key codes that are allowed even when the text note is at max length (so user can select/delete text)
+const MAX_LENGTH_ALLOWED_KEYS = [
+  8, // backspace
+  13, // enter
+  16, // shift
+  17, // control
+  18, // alt
+  46, // delete
+  37, // left arrow
+  38, // up arrow
+  39, // right arrow
+  40 // down arrow
+];
+
 // Instances of HubTextNote manage an individual text note attached to a graphic, including handling text input
 // and positioning (sometimes dynamically updated as the view changes) relative to the "anchor" graphic.
 export default class HubTextNote {
@@ -57,8 +71,8 @@ export default class HubTextNote {
     'bottom-right': 7
   };
 
-  constructor ({ id, editable = false, graphic, text = '', textPlaceholder = '', cssClass, placementHint, placementAlignments, onNoteEvent }) {
-    Object.assign(this, { id, editable, graphic, text, textPlaceholder, cssClass });
+  constructor ({ id, editable = false, graphic, text = '', textPlaceholder = '', textMaxCharacters, cssClass, placementHint, placementAlignments, onNoteEvent }) {
+    Object.assign(this, { id, editable, graphic, text, textPlaceholder, textMaxCharacters, cssClass });
     this.onNoteEvent = typeof onNoteEvent === 'function' ? onNoteEvent : function(){}; // provide an empty callback as fallback
     this.anchor = null; // a point on the graphic that the text note is positioned relative to
     this.mapPoint = null; // the current computed map point for the text note element
@@ -193,8 +207,9 @@ export default class HubTextNote {
     this.container.appendChild(this.textElement);
 
     // add input-related event handlers
-    this.addEventListener(this.textElement, 'input', event => this.onInputEvent(event, view));
-    this.addEventListener(this.textElement, 'paste', event => this.onPasteEvent(event, view));
+    this.addEventListener(this.textElement, 'input', event => this.onTextInputEvent(event, view));
+    this.addEventListener(this.textElement, 'paste', event => this.onTextPasteEvent(event, view));
+    this.addEventListener(this.textElement, 'keydown', event => this.onTextKeydownEvent(event, view));
 
     // add general cursor/focus/blur event handlers
     [this.container, this.textElement].forEach(element => {
@@ -253,8 +268,28 @@ export default class HubTextNote {
     this.updatePosition(view);
   }
 
+  // handle input key down events to enforce max character limit
+  onTextKeydownEvent (event, view) {
+    if (!this.textMaxCharacters) {
+      return; // nothing to do if not max note length defined
+    }
+
+    // always allow input if text is selected (because the next input will replace the selection)
+    const selection = window.getSelection();
+    if (selection && selection.toString()) {
+      return;
+    }
+
+    // otherwise enforce max character length on notes
+    // input from keys that allow the user to navigate/select/delete text are allowed
+    if (this.textElement.innerText.length >= this.textMaxCharacters &&
+        !MAX_LENGTH_ALLOWED_KEYS.includes(event.keyCode)) {
+      event.preventDefault(); // don't allow input to pass through
+    }
+  }
+
   // handle input events
-  onInputEvent (event, view) {
+  onTextInputEvent (event, view) {
     // exit edit mode when a user hits enter
     if ((event.inputType === 'insertText' || event.inputType === 'insertParagraph') && event.data == null) {
       this.textElement.innerText = this.text; // revert to text before line break
@@ -267,7 +302,7 @@ export default class HubTextNote {
   }
 
   // handle paste events
-  onPasteEvent (event, view) {
+  onTextPasteEvent (event, view) {
     event.stopPropagation();
     event.preventDefault();
 
@@ -280,6 +315,11 @@ export default class HubTextNote {
       range.insertNode(document.createTextNode(pastedData));
     }
     selection.removeAllRanges(); // de-select text
+
+    // optional max character length on notes
+    if (this.textMaxCharacters && this.textElement.innerText.length > this.textMaxCharacters) {
+      this.textElement.innerText = this.textElement.innerText.slice(0, this.textMaxCharacters);
+    }
 
     this.text = this.textElement.innerText; // update current text
     this.updatePosition(view);
