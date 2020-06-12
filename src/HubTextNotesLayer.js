@@ -9,8 +9,8 @@ const HubTextNotesLayer = Layer.createSubclass({
   declaredClass: 'HubTextNotesLayer',
   noteId: 0, // incrementing ide to uniquely identify notes in the layer
 
-  constructor ({ editable, textPlaceholder, cssClass }) {
-    Object.assign(this, { editable, textPlaceholder, cssClass });
+  constructor ({ editable, textPlaceholder, textMaxCharacters, cssClass }) {
+    Object.assign(this, { editable, textPlaceholder, textMaxCharacters, cssClass });
     this.hubNotes = [];
   },
 
@@ -37,6 +37,7 @@ const HubTextNotesLayer = Layer.createSubclass({
       graphic,
       text,
       textPlaceholder: this.textPlaceholder,
+      textMaxCharacters: this.textMaxCharacters,
       cssClass: this.cssClass,
       placementHint,
       placementAlignments,
