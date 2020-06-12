@@ -8,6 +8,7 @@ import { getFontSettings } from './fonts';
 const NOTE_TEXT_CLASS = 'note-text'; // style the text div, which may be contenteditable
 const NOTE_HOVER_CLASS = 'note-hover'; // style the hover state
 const NOTE_SELECT_CLASS = 'note-select'; // style the selected state
+const NOTE_DRAGGING_CLASS = 'note-dragging'; // style note while dragging
 
 // CSS applied directly to each text note element
 // outer container, draggable
@@ -16,7 +17,7 @@ const NOTE_CONTAINER_STYLE = `
 `;
 
 // added to outer container when drag-drop is available
-const NOTE_DRAG_STYLE = `
+const NOTE_DRAGGABLE_STYLE = `
   cursor: grab;
 `;
 
@@ -163,18 +164,20 @@ export default class HubTextNote {
       this.container.style.cursor = 'grabbing';
       this.textElement.style.cursor = 'inherit';
       view.cursor = 'grabbing';
+      this.container.classList.add(NOTE_DRAGGING_CLASS);
     } else {
       // restore cursors
       this.container.style.cursor = 'grab';
       this.textElement.style.cursor = 'auto';
       view.cursor = this.prevCursor;
+      this.container.classList.remove(NOTE_DRAGGING_CLASS);
     }
   }
 
   createElements (view) {
     // setup outer note element, which is draggable (when editing is enable)
     this.container = document.createElement('div');
-    this.container.style = `${NOTE_CONTAINER_STYLE} ${this.draggable() ? NOTE_DRAG_STYLE : ''}`;
+    this.container.style = `${NOTE_CONTAINER_STYLE} ${this.draggable() ? NOTE_DRAGGABLE_STYLE : ''}`;
     if (this.cssClass) {
       this.container.classList.add(this.cssClass); // apply user-supplied style
     }
