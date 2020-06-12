@@ -1,6 +1,15 @@
 import * as BaseLayerView2D from 'esri/views/2d/layers/BaseLayerView2D';
 import * as Graphic from 'esri/Graphic';
 
+const NOTES_CONTAINER_STYLE = `
+  z-index: 0;
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+`;
+
 // The layer view is resopnsible for creating and managing text note HTML elements to stay in sync with the map view
 const HubTextNotesLayerView2D = BaseLayerView2D.createSubclass({
   declaredClass: 'HubTextNotesLayerView2D',
@@ -11,12 +20,18 @@ const HubTextNotesLayerView2D = BaseLayerView2D.createSubclass({
   },
 
   attach () {
+    // create container for notes and attach to map view DOM
+    this.notesContainer = document.createElement('div');
+    this.notesContainer.classList.add('hub-text-notes');
+    this.notesContainer.style = NOTES_CONTAINER_STYLE;
+    this.view.surface.appendChild(this.notesContainer);
+
     // process any notes already in the layer
     this.layer.hubNotes.forEach(note => this.addNoteElements(note));
 
     // add event handlers
     this._handles.push(this.layer.on('note-add', event => this.addNoteElements(event.note)));
-    this._handles.push(this.layer.on(['note-select', 'note-drag'], () => this.setDirty(true)));
+    this._handles.push(this.layer.on(['note-select', 'note-hover', 'note-drag'], () => this.setDirty(true)));
     this._handles.push(this.view.watch('extent', () => this.setDirty(true)));
   },
 
@@ -32,7 +47,7 @@ const HubTextNotesLayerView2D = BaseLayerView2D.createSubclass({
   },
 
   addNoteElements (note) {
-    note.createElements(this.view);
+    note.createElements(this.view, this.notesContainer);
     this.setDirty(true);
   },
 
@@ -56,7 +71,6 @@ const HubTextNotesLayerView2D = BaseLayerView2D.createSubclass({
   // and centerpoint as geometry.
   hitTest (x, y) {
     const notes = this.layer.hubNotes
-      .filter(note => !note.hidden()) // ignore notes hidden by collision detection
       .filter(note => note.container && elementContainsPoint(note.container, { x, y })); // point is inside note
 
     const graphic = notes[0] && new Graphic({

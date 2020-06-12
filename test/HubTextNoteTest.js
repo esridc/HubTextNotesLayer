@@ -23,8 +23,10 @@ describe('HubNote', () => {
 
   beforeEach(() => {
     view = createView();
+    const notesContainer = document.createElement('div'); // created by layer view
+
     note = new HubTextNote({ graphic: polygonGraphic, text: 'this is a test note', cssClass: 'map-note' });
-    note.createElements(view);
+    note.createElements(view, notesContainer);
     document.body.appendChild(note.container); // needs to be in DOM for some tests like focus
   });
 
@@ -61,10 +63,10 @@ describe('HubNote', () => {
     assert.equal(note.focused(), true);
   });
 
-  it('hides the note', () => {
-    assert.equal(note.hidden(), false);
-    note.setVisibility(false);
-    assert.equal(note.hidden(), true);
+  it('occludes the note', () => {
+    assert.equal(note.occluded(), false);
+    note.setOccluded(false);
+    assert.equal(note.occluded(), true);
   });
 
   it('converts the note to a graphic', () => {
