@@ -11,6 +11,6 @@ export function createView () {
 export function createNote ({ graphic, text }) {
   const view = createView();
   const note = new HubNote({ graphic, text });
-  note.createTextElement(view);
+  note.createElements(view);
   return note;
 }
