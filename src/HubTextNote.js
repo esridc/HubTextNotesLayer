@@ -73,7 +73,7 @@ export default class HubTextNote {
 
   constructor ({ id, editable = false, graphic, text = '', textPlaceholder = '', textMaxCharacters, cssClass, placementHint, placementAlignments, onNoteEvent }) {
     Object.assign(this, { id, editable, graphic, text, textPlaceholder, textMaxCharacters, cssClass });
-    this.onNoteEvent = typeof onNoteEvent === 'function' ? onNoteEvent : function(){}; // provide an empty callback as fallback
+    this.emitNoteEvent = typeof onNoteEvent === 'function' ? onNoteEvent : function(){}; // provide an empty callback as fallback
     this.anchor = null; // a point on the graphic that the text note is positioned relative to
     this.mapPoint = null; // the current computed map point for the text note element
     if (placementHint) {
@@ -149,7 +149,7 @@ export default class HubTextNote {
       }
 
       if (state !== hovered) {
-        this.onNoteEvent('hover', this, { type: 'hover' });
+        this.emitNoteEvent('hover', this, { type: 'hover' });
       }
     }
   }
@@ -164,7 +164,7 @@ export default class HubTextNote {
       }
 
       if (state !== selected) {
-        this.onNoteEvent('select', this, { type: 'select' });
+        this.emitNoteEvent('select', this, { type: 'select' });
       }
     }
   }
@@ -228,7 +228,7 @@ export default class HubTextNote {
       });
 
       this.addEventListener(element, 'focus', (event) => {
-        this.onNoteEvent('focus', this, event);
+        this.emitNoteEvent('focus', this, event);
       });
 
       this.addEventListener(element, 'blur', (event) => {
@@ -237,7 +237,7 @@ export default class HubTextNote {
         // don't treat a blur when transitioning to a drag operation as a blur event extenrally (e.g. to the calling app)
         // we don't want it to trigger other changes such as a de-selection of the shape
         if (!this.dragging) {
-          this.onNoteEvent('blur', this, event);
+          this.emitNoteEvent('blur', this, event);
         }
       });
     });
@@ -298,7 +298,7 @@ export default class HubTextNote {
 
     this.text = this.textElement.innerText; // update current text
     this.updatePosition(view);
-    this.onNoteEvent('update-text', this, event);
+    this.emitNoteEvent('update-text', this, event);
   }
 
   // handle paste events
@@ -323,7 +323,7 @@ export default class HubTextNote {
 
     this.text = this.textElement.innerText; // update current text
     this.updatePosition(view);
-    this.onNoteEvent('update-text', this, event);
+    this.emitNoteEvent('update-text', this, event);
   }
 
   // re-calculate note's position (constrained by the graphic) as it is dragged
@@ -332,7 +332,7 @@ export default class HubTextNote {
       this.wasDragged = true;
       this.anchor = null; // will be re-calculated on next update
       this.placementHint = view.toMap(event); // place closest to the current pointer location
-      this.onNoteEvent('drag', this, event); // layer view will request a re-render
+      this.emitNoteEvent('drag', this, event); // layer view will request a re-render
     }
   }
 
@@ -341,7 +341,7 @@ export default class HubTextNote {
     const changed = this.updateMapPoint(view);
     this.updateTextElement(view);
     if (changed) {
-      this.onNoteEvent('update-position', this, { type: 'update-position' });
+      this.emitNoteEvent('update-position', this, { type: 'update-position' });
     }
   }
 
