@@ -486,35 +486,42 @@ export default class HubTextNote {
       if (!nearPoint) {
         const extent = polygon.extent;
         if (extent.width > extent.height) { // if wider, place near bottom side
-          nearPoint = {
+          nearPoint = new HubTextNote.Point({
             type: 'point',
             x: (extent.xmin + extent.xmax) / 2,
             y: extent.ymin,
             spatialReference: polygon.spatialReference
-          };
+          });
         } else { // if taller, place near right side
-          nearPoint = {
+          nearPoint = new HubTextNote.Point({
             type: 'point',
             x: extent.xmax,
             y: (extent.ymin + extent.ymax) / 2,
             spatialReference: polygon.spatialReference
-          };
+          });
         }
       }
 
-      // place along the polygon's outer ring
-      const ring = {
-        type: 'polyline',
-        paths: [polygon.rings[0]],
-        spatialReference: polygon.spatialReference
-      };
-      this.anchor = HubTextNote.geometryEngine.nearestCoordinate(ring, nearPoint).coordinate;
-      // point vector away from centroid so note is pushed "out" from polygon edge
-      this.vector = normalize([
-        polygon.centroid.x - this.anchor.x,
-        polygon.centroid.y - this.anchor.y
-      ]);
-    }
+      const dist = HubTextNote.geometryEngine.distance(polygon, nearPoint);
+      if (dist === 0) {
+        // if the note is inside the polygon, keep it in place
+        this.anchor = nearPoint.clone();
+        this.vector = [0, 0];
+      } else {
+        // if the note is outside the polygon, place along the polygon's outer ring
+        // (will be snapped to a distance from the ring based on its size, and current zoom level)
+        const ring = {
+          type: 'polyline',
+          paths: [polygon.rings[0]],
+          spatialReference: polygon.spatialReference
+        };
+        this.anchor = HubTextNote.geometryEngine.nearestCoordinate(ring, nearPoint).coordinate;
+        this.vector = normalize([
+          this.anchor.x - nearPoint.x,
+          this.anchor.y - nearPoint.y
+        ]);
+      }
+      }
 
     return this.computeAnchoredPosition(view);
   }
@@ -522,31 +529,37 @@ export default class HubTextNote {
   // find a note's position relative to an anchor point and direction, for the current zoom
   computeAnchoredPosition (view) {
     const noteSize = [this.container.offsetWidth, this.container.offsetHeight];
-    let pixelDist = 15; // starting buffer distance to maintain between note and anchor point
+    const bufferDist = this.bufferDistanceForZoom(view.zoom);
+
+    // initial vector pointing away from anchor, converting pixels to map units
+    const textPoint = {
+      x: this.anchor.x - this.vector[0] * bufferDist * view.resolution,
+      y: this.anchor.y - this.vector[1] * bufferDist * view.resolution
+    };
+
+    if (length(this.vector) > 0) { // if vector has zero length, anchor is inside geometry and needs no offset
+      // then offset the note based on the directional octant of its placement vector
+      const angle = Math.atan2(this.vector[1], this.vector[0]);
+      const octant = Math.round(8 * angle / (Math.PI*2) + 8) % 8;
+      const offset = HubTextNote.octantOffsets[octant];
+
+      textPoint.x -= offset[0] * noteSize[0]/2 * view.resolution;
+      textPoint.y -= offset[1] * noteSize[1]/2 * view.resolution;
+    }
+
+    return textPoint;
+  }
+
+  // how many pixels the note should be placed away from the shape, for the current zoom level
+  bufferDistanceForZoom (zoom) {
+    let bufferDist = 15; // starting buffer distance to maintain between note and anchor point
 
     // taper the distance as you zoom out from the scale the text note was placed in
     const zoomDecreaseRange = 3; // at this number of zooms out from original text note placement
     const zoomDecreaseFactor = 0.5; // reduce the original text note distance by this %
-    const zoomDiff = Math.min(Math.max(this.initialZoom - view.zoom, 0), zoomDecreaseRange);
-    pixelDist *= 1 - (zoomDiff / zoomDecreaseRange) * zoomDecreaseFactor;
-
-    // initial vector pointing away from anchor, converting pixels to map units
-    const textPoint = {
-      x: this.anchor.x - this.vector[0] * pixelDist * view.resolution,
-      y: this.anchor.y - this.vector[1] * pixelDist * view.resolution
-    };
-
-
-    // then offset the note based on the directional octant of its placement vector
-    const angle = Math.atan2(this.vector[1], this.vector[0]);
-    const octant = Math.round(8 * angle / (Math.PI*2) + 8) % 8;
-    const offset = HubTextNote.octantOffsets[octant];
-
-    textPoint.x -= offset[0] * noteSize[0]/2 * view.resolution;
-    textPoint.y -= offset[1] * noteSize[1]/2 * view.resolution;
-
-
-    return textPoint;
+    const zoomDiff = Math.min(Math.max(this.initialZoom - zoom, 0), zoomDecreaseRange);
+    bufferDist *= 1 - (zoomDiff / zoomDecreaseRange) * zoomDecreaseFactor;
+    return bufferDist;
   }
 
   // convert text note to an approximate TextSymbol representation
