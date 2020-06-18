@@ -65,7 +65,16 @@ const HubTextNotesLayer = Layer.createSubclass({
 
   // retrieve note by referenced graphic
   findNoteForGraphic (graphic) {
-    return this.hubNotes.find(note => note.graphic === graphic);
+    // first look for a note with same graphic identity, should work for GraphicsLayer
+    let note = this.hubNotes.find(note => note.graphic === graphic);
+    if (note) {
+      return note;
+    }
+
+    // then fallback to comparing by object id, necessary for features from a FeatureLayer.hitTest()
+    return this.hubNotes
+      .filter(note => note.graphic.getObjectId() != null)
+      .find(note => note.graphic.getObjectId() === graphic.getObjectId());
   },
 
   setHoveredNoteForGraphic (graphic) {
