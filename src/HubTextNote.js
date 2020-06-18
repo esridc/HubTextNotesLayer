@@ -138,7 +138,8 @@ export default class HubTextNote {
   }
 
   draggable () {
-    return this.editable === true;
+    return this.editable === true &&
+      (this.graphic.geometry.type !== 'point' || this.placement.pointAlignments.length > 1);
   }
 
   setOccluded (state) {
