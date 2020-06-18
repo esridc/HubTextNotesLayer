@@ -80,10 +80,11 @@ export default class HubTextNote {
   constructor ({
       id, editable = false, graphic, placement = {},
       text = '', textPlaceholder = '', textMaxCharacters, cssClass,
-      onNoteEvent,
+      onNoteEvent, onNoteFirstPlacement
     }) {
     Object.assign(this, { id, editable, graphic, text, textPlaceholder, textMaxCharacters, cssClass, placement });
     this.emitNoteEvent = typeof onNoteEvent === 'function' ? onNoteEvent : function(){}; // provide an empty callback as fallback
+    this.onNoteFirstPlacement = typeof onNoteFirstPlacement === 'function' ? onNoteFirstPlacement : function(){};
     this.anchor = null; // a point on the graphic that the text note is positioned relative to
     this.mapPoint = null; // the current computed map point for the text note element
     this.dragging = false; // is note actively being dragged
@@ -384,10 +385,14 @@ export default class HubTextNote {
 
   // Update text note position in world space and screenspace
   async updatePosition (view) {
+    const firstPlacement = (this.mapPoint == null);
     const changed = await this.updateMapPoint(view);
     this.updateTextElement(view);
     if (changed) {
       this.emitNoteEvent('update-position', this, { type: 'update-position' });
+      if (firstPlacement) {
+        this.onNoteFirstPlacement();
+      }
     }
   }
 

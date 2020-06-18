@@ -30,7 +30,14 @@ const HubTextNotesLayer = Layer.createSubclass({
     this.emit(`note-${type}`, { note, ...event });
   },
 
-  addNoteForGraphic (graphic, { text, placement } = {}) {
+  async addNoteForGraphic (graphic, { text, placement } = {}) {
+    // promise that resolves when note is placed for the first time
+    let onNoteFirstPlacement;
+    const notePlaced = new Promise(resolve => {
+      onNoteFirstPlacement = () => resolve();
+    });
+
+    // create note
     const note = new HubTextNote({
       id: this.noteId++,
       editable: this.editable,
@@ -40,10 +47,14 @@ const HubTextNotesLayer = Layer.createSubclass({
       textMaxCharacters: this.textMaxCharacters,
       cssClass: this.cssClass,
       placement,
-      onNoteEvent: this.onNoteEvent.bind(this)
+      onNoteEvent: this.onNoteEvent.bind(this),
+      onNoteFirstPlacement
     });
     this.hubNotes.push(note);
     this.emit('note-add', { note });
+
+    // wait for initial placement, so caller can access note location on map
+    await notePlaced;
     return note;
   },
 
