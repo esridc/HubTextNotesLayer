@@ -82,8 +82,8 @@ const HubTextNotesLayer = Layer.createSubclass({
     });
   },
 
-  updateNotePositions (view) {
-    this.hubNotes.forEach(note => note.updatePosition(view));
+  async updateNotePositions (view) {
+    await Promise.all(this.hubNotes.map(note => note.updatePosition(view)));
   },
 
   dragging () {

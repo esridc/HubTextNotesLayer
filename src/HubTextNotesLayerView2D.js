@@ -66,10 +66,12 @@ const HubTextNotesLayerView2D = GraphicsLayerView2D.createSubclass({
     // render calls much more frequently than we need to update, so only run collision and DOM updates when needed
     if (this._dirty) {
       this.setDirty(false);
-      this.layer.updateNotePositions(this.view); // update text note positions in world/screen
-      if (this.view.stationary) {
-        this.layer.collideNotes(); // update text note visibility based on collisions
-      }
+      // update text note positions in world/screen
+      this.layer.updateNotePositions(this.view).then(() => {
+        if (this.view.stationary) {
+          this.layer.collideNotes(); // update text note visibility based on collisions
+        }
+      });
     }
   },
 

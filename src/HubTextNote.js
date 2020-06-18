@@ -1,6 +1,7 @@
 import * as geometryEngine from 'esri/geometry/geometryEngine';
 import * as Point from 'esri/geometry/Point';
 import * as screenUtils from 'esri/core/screenUtils';
+import * as symbolUtils from 'esri/symbols/support/symbolUtils';
 import { getFontSettings } from './fonts';
 
 // CSS classes added to text note elements to indicate various states, for user-provided styling
@@ -313,7 +314,7 @@ export default class HubTextNote {
   }
 
   // handle input events
-  onTextInputEvent (event, view) {
+  async onTextInputEvent (event, view) {
     // exit edit mode when a user hits enter
     if ((event.inputType === 'insertText' || event.inputType === 'insertParagraph') && event.data == null) {
       this.textElement.innerText = this.text; // revert to text before line break
@@ -321,12 +322,12 @@ export default class HubTextNote {
     }
 
     this.text = this.textElement.innerText; // update current text
-    this.updatePosition(view);
+    await this.updatePosition(view);
     this.emitNoteEvent('update-text', this, event);
   }
 
   // handle paste events
-  onTextPasteEvent (event, view) {
+  async onTextPasteEvent (event, view) {
     event.stopPropagation();
     event.preventDefault();
 
@@ -346,7 +347,7 @@ export default class HubTextNote {
     }
 
     this.text = this.textElement.innerText; // update current text
-    this.updatePosition(view);
+    await this.updatePosition(view);
     this.emitNoteEvent('update-text', this, event);
   }
 
@@ -381,8 +382,8 @@ export default class HubTextNote {
   }
 
   // Update text note position in world space and screenspace
-  updatePosition (view) {
-    const changed = this.updateMapPoint(view);
+  async updatePosition (view) {
+    const changed = await this.updateMapPoint(view);
     this.updateTextElement(view);
     if (changed) {
       this.emitNoteEvent('update-position', this, { type: 'update-position' });
@@ -404,14 +405,14 @@ export default class HubTextNote {
   }
 
   // Re-compute the position of the text note on the map, relative to its graphic
-  updateMapPoint (view) {
+  async updateMapPoint (view) {
     if (this.initialZoom == null) {
       this.initialZoom = view.zoom;
     }
 
     let point;
     if (this.graphic.geometry.type === 'point') {
-      point = this.placePointNote(view);
+      point = await this.placePointNote(view);
     } else if (this.graphic.geometry.type === 'polyline') {
       point = this.placeLineNote(view);
     } else if (this.graphic.geometry.type === 'polygon') {
@@ -429,7 +430,7 @@ export default class HubTextNote {
     return JSON.stringify(this.mapPoint.toJSON()) !== prevPoint;
   }
 
-  placePointNote (view) {
+  async placePointNote (view) {
     if (!this.anchor) { // set placement anchor if this is the first time placing the note
       this.anchor = this.graphic.geometry.clone();
       this.buffer = [6, 3]; // space in pixels between marker and note
@@ -437,7 +438,9 @@ export default class HubTextNote {
 
     // get note and marker size
     const noteSize = [this.container.offsetWidth, this.container.offsetHeight];
-    const symbol = this.graphic.symbol;
+
+    // JSAPI may need to compute symbol, e.g. for feature layers
+    const symbol = await symbolUtils.getDisplayedSymbol(this.graphic, view);
     const graphicSize = (symbol.type === 'picture-marker' ?
       [symbol.width, symbol.height] : // width/height from picture marker
       [symbol.size + symbol.outline.width, symbol.size + symbol.outline.width]) // size from simple marker
