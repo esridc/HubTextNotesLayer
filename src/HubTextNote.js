@@ -76,17 +76,22 @@ export default class HubTextNote {
     'bottom-right': 7
   };
 
-  constructor ({ id, editable = false, graphic, text = '', textPlaceholder = '', textMaxCharacters, cssClass, placementHint, placementAlignments, onNoteEvent }) {
-    Object.assign(this, { id, editable, graphic, text, textPlaceholder, textMaxCharacters, cssClass });
+  constructor ({
+      id, editable = false, graphic, placement = {},
+      text = '', textPlaceholder = '', textMaxCharacters, cssClass,
+      onNoteEvent,
+    }) {
+    Object.assign(this, { id, editable, graphic, text, textPlaceholder, textMaxCharacters, cssClass, placement });
     this.emitNoteEvent = typeof onNoteEvent === 'function' ? onNoteEvent : function(){}; // provide an empty callback as fallback
     this.anchor = null; // a point on the graphic that the text note is positioned relative to
     this.mapPoint = null; // the current computed map point for the text note element
     this.dragging = false; // is note actively being dragged
-    if (placementHint) {
+    if (this.placement.hint) {
       // convert to Point instance if needed, so param will accept JSON or existing instance
-      this.placementHint = new HubTextNote.Point(placementHint);
+      this.placement.hint = new HubTextNote.Point(this.placement.hint);
     }
-    this.placementAlignments = placementAlignments ?? Object.keys(HubTextNote.alignmentOctants); // default to all alignments
+    this.placement.pointAlignments = this.placement.pointAlignments ?? Object.keys(HubTextNote.alignmentOctants); // default to all alignments
+    this.placement.outsidePolygon = this.placement.outsidePolygon ?? true;
     this._listeners = []; // DOM event listeners
     this._handles = []; // JSAPI handles
   }
@@ -350,7 +355,7 @@ export default class HubTextNote {
     if (this.dragging) {
       this.wasDragged = true;
       this.anchor = null; // will be re-calculated on next update
-      this.placementHint = view.toMap(event); // place closest to the current pointer location
+      this.placement.hint = view.toMap(event); // place closest to the current pointer location
 
       if (this.graphic.geometry.type !== 'point') {
         if (this.lastDragPoint) {
@@ -439,7 +444,7 @@ export default class HubTextNote {
         .map(HubTextNote.screenUtils.pt2px); // convert to pixels
 
     // get candidate locations for note based on configured alignment options
-    const candidates = this.placementAlignments.map(alignment => {
+    const candidates = this.placement.pointAlignments.map(alignment => {
       // get current screen position and adjust center-point for symbol's offset
       const textScreenPoint = view.toScreen(this.anchor);
       textScreenPoint.x -= symbol.xoffset;
@@ -452,9 +457,9 @@ export default class HubTextNote {
 
       // convert back to map coords and get distance from hint location
       const textPoint = view.toMap(textScreenPoint);
-      const dist = this.placementHint ? length([
-        textPoint.x - this.placementHint.x,
-        textPoint.y - this.placementHint.y
+      const dist = this.placement.hint ? length([
+        textPoint.x - this.placement.hint.x,
+        textPoint.y - this.placement.hint.y
       ]) : 0;
 
       return { alignment, textPoint, dist };
@@ -462,8 +467,8 @@ export default class HubTextNote {
 
     // don't snap to a new alignment while the user is editing (note is focused)
     if (!this.lastAlignment || !this.focused()) {
-      if (!this.placementHint) { // if no hint provided, just use first alignment
-        this.lastAlignment = this.placementAlignments[0];
+      if (!this.placement.hint) { // if no hint provided, just use first alignment
+        this.lastAlignment = this.placement.pointAlignments[0];
       } else {
         // find candidate closest to placement hint
         const [closest] = candidates.sort((a, b) => a.dist === b.dist ? 1 : a.dist - b.dist);
@@ -480,7 +485,7 @@ export default class HubTextNote {
     // find placement anchor and vector if new note location is being calculated (first placement, or being dragged))
     if (!this.anchor) {
       const line = this.graphic.geometry;
-      let nearPoint = this.placementHint;
+      let nearPoint = this.placement.hint;
 
       // if no "hint" location for note placement was provided, choose one based on geometry
       if (!nearPoint) {
@@ -520,7 +525,7 @@ export default class HubTextNote {
     // find placement anchor and vector if new note location is being calculated (first placement, or being dragged))
     if (!this.anchor) {
       const polygon = this.graphic.geometry;
-      let nearPoint = this.placementHint;
+      let nearPoint = this.placement.hint;
 
       // if no "hint" location for note placement was provided, choose one based on geometry
       if (!nearPoint) {
@@ -548,18 +553,24 @@ export default class HubTextNote {
         this.anchor = nearPoint.clone();
         this.vector = [0, 0];
       } else {
-        // if the note is outside the polygon, place along the polygon's outer ring
+        // if the note is outside the polygon, place along the polygon's outer ring if allowed, or constrain to interior
         // (will be snapped to a distance from the ring based on its size, and current zoom level)
         const ring = {
           type: 'polyline',
           paths: [polygon.rings[0]],
           spatialReference: polygon.spatialReference
         };
+
         this.anchor = HubTextNote.geometryEngine.nearestCoordinate(ring, nearPoint).coordinate;
-        this.vector = normalize([
-          this.anchor.x - nearPoint.x,
-          this.anchor.y - nearPoint.y
-        ]);
+
+        if (this.placement.outsidePolygon === true) { // allow placement outside of polygon
+          this.vector = normalize([
+            this.anchor.x - nearPoint.x,
+            this.anchor.y - nearPoint.y
+          ]);
+        } else { // constrain placement within polygon interior
+          this.vector = [0, 0];
+        }
       }
       }
 

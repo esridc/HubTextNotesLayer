@@ -30,7 +30,7 @@ const HubTextNotesLayer = Layer.createSubclass({
     this.emit(`note-${type}`, { note, ...event });
   },
 
-  addNoteForGraphic (graphic, { text, placementHint, placementAlignments } = {}) {
+  addNoteForGraphic (graphic, { text, placement } = {}) {
     const note = new HubTextNote({
       id: this.noteId++,
       editable: this.editable,
@@ -39,8 +39,7 @@ const HubTextNotesLayer = Layer.createSubclass({
       textPlaceholder: this.textPlaceholder,
       textMaxCharacters: this.textMaxCharacters,
       cssClass: this.cssClass,
-      placementHint,
-      placementAlignments,
+      placement,
       onNoteEvent: this.onNoteEvent.bind(this)
     });
     this.hubNotes.push(note);
