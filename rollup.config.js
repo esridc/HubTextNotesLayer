@@ -23,7 +23,7 @@ export default {
           }
         ]
       ],
-      plugins: ['@babel/plugin-proposal-class-properties'],
+      plugins: ['@babel/plugin-proposal-class-properties', 'transform-async-to-promises'],
       exclude: 'node_modules/**'
     })
   ]
