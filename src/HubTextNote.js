@@ -1,5 +1,6 @@
 import * as geometryEngine from 'esri/geometry/geometryEngine';
 import * as Point from 'esri/geometry/Point';
+import * as screenUtils from 'esri/core/screenUtils';
 import { getFontSettings } from './fonts';
 
 // CSS classes added to text note elements to indicate various states, for user-provided styling
@@ -48,6 +49,7 @@ export default class HubTextNote {
   // NOTE: this is a workaround to allow these modules to be externally loaded in tests
   static Point = Point;
   static geometryEngine = geometryEngine;
+  static screenUtils = screenUtils;
 
   static octantOffsets = [
     [1, 0], // right
@@ -394,9 +396,10 @@ export default class HubTextNote {
     // get note and marker size
     const noteSize = [this.container.offsetWidth, this.container.offsetHeight];
     const symbol = this.graphic.symbol;
-    const graphicSize = symbol.type === 'picture-marker' ?
-      [pt2px(symbol.width), pt2px(symbol.height)] : // width/height from picture marker
-      [pt2px(symbol.size + symbol.outline.width), pt2px(symbol.size + symbol.outline.width)]; // size from simple marker
+    const graphicSize = (symbol.type === 'picture-marker' ?
+      [symbol.width, symbol.height] : // width/height from picture marker
+      [symbol.size + symbol.outline.width, symbol.size + symbol.outline.width]) // size from simple marker
+        .map(HubTextNote.screenUtils.pt2px); // convert to pixels
 
     // get candidate locations for note based on configured alignment options
     const candidates = this.placementAlignments.map(alignment => {
@@ -628,11 +631,6 @@ function length (v) {
 function normalize (v) {
   const len = length(v);
   return len > 0 ? v.map(x => x / len) : v;
-}
-
-// convert points to pixels
-function pt2px (pt = 0) {
-  return pt / 0.75;
 }
 
 function convertElementColorProperty (computedStyle, prop, useAlpha = true) {

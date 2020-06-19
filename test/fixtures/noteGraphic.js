@@ -31,8 +31,8 @@ export default {
     ],
     "horizontalAlignment": "center",
     "verticalAlignment": "middle",
-    "xoffset": 0.07495673652738333,
-    "yoffset": 0.00254709180444479
+    "xoffset": 0.07448797393590212,
+    "yoffset": -0.008748816791921854
   },
   "attributes": {
     "text": "this is a test note"

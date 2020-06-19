@@ -14,8 +14,10 @@ describe('HubNote', () => {
 
   before(async () => {
     // load JSAPI dependencies
-    const [Point, geometryEngine] = await loadModules(['esri/geometry/Point', 'esri/geometry/geometryEngine']);
-    Object.assign(HubTextNote, { Point, geometryEngine });
+    const [Point, geometryEngine, screenUtils] = await loadModules([
+      'esri/geometry/Point', 'esri/geometry/geometryEngine', 'esri/core/screenUtils'
+    ]);
+    Object.assign(HubTextNote, { Point, geometryEngine, screenUtils });
     return Promise.resolve(); // avoids some timeout errors (?)
   });
 
