@@ -84,7 +84,7 @@ export default class HubTextNote {
       // convert to Point instance if needed, so param will accept JSON or existing instance
       this.placementHint = new HubTextNote.Point(placementHint);
     }
-    this.placementAlignments = placementAlignments || Object.keys(HubTextNote.alignmentOctants); // default to all alignments
+    this.placementAlignments = placementAlignments ?? Object.keys(HubTextNote.alignmentOctants); // default to all alignments
     this._listeners = []; // DOM event listeners
     this._handles = []; // JSAPI handles
   }
@@ -118,15 +118,15 @@ export default class HubTextNote {
   }
 
   hovered () {
-    return this.container && this.container.classList.contains(NOTE_HOVER_CLASS);
+    return this.container?.classList.contains(NOTE_HOVER_CLASS);
   }
 
   selected () {
-    return this.container && this.container.classList.contains(NOTE_SELECT_CLASS);
+    return this.container?.classList.contains(NOTE_SELECT_CLASS);
   }
 
   occluded () {
-    return this.container && this.container.classList.contains(NOTE_OCCLUDED_CLASS);
+    return this.container?.classList.contains(NOTE_OCCLUDED_CLASS);
   }
 
   draggable () {
@@ -282,7 +282,7 @@ export default class HubTextNote {
 
     // always allow input if text is selected (because the next input will replace the selection)
     const selection = window.getSelection();
-    if (selection && selection.toString()) {
+    if (selection?.toString()) {
       return;
     }
 
@@ -380,7 +380,7 @@ export default class HubTextNote {
       point = this.placePolygonNote(view);
     }
 
-    const prevPoint = JSON.stringify(this.mapPoint && this.mapPoint.toJSON());
+    const prevPoint = JSON.stringify(this.mapPoint?.toJSON());
 
     this.mapPoint = new HubTextNote.Point({
       spatialReference: this.graphic.geometry.spatialReference,
@@ -583,10 +583,10 @@ export default class HubTextNote {
 
     // get font colors from text element
     // use text element background color as font halo color, because JSAPI TextSymbol doesn't support background color
-    const textColor = convertElementColorProperty(textStyle, 'color') || [0, 0, 0, 255];
+    const textColor = convertElementColorProperty(textStyle, 'color') ?? [0, 0, 0, 255];
     let textBackgroundColor = convertElementColorProperty(textStyle, 'backgroundColor');
     if (!textBackgroundColor || textBackgroundColor[3] === 0) { // fallback to container background color
-      textBackgroundColor = convertElementColorProperty(containerStyle, 'backgroundColor') || textColor;
+      textBackgroundColor = convertElementColorProperty(containerStyle, 'backgroundColor') ?? textColor;
     }
     const textHasBackgroundColor = textColor.some((c, i) => textBackgroundColor[i] !== c); // is the background color different?
 
@@ -641,9 +641,9 @@ function convertElementColorProperty (computedStyle, prop, useAlpha = true) {
   const val = computedStyle[prop];
   if (!val) return;
 
-  const match = val.match(/\((.*)\)/); // match rgb() or rgba() syntax
-  if (match && match.length > 1) {
-    let color = match[1].split(',').map(s => parseFloat(s.trim()));
+  const rgba = val.match(/\((.*)\)/)?.[1]; // match rgb() or rgba() syntax
+  if (rgba) {
+    const color = rgba.split(',').map(s => parseFloat(s.trim()));
 
     // optionally adjust alpha or use default
     // Web Map JSON expects alpha in 0-255 range (HTML range is 0-1)
