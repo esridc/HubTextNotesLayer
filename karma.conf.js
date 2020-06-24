@@ -1,6 +1,6 @@
-var babel = require('rollup-plugin-babel');
-var resolve = require('rollup-plugin-node-resolve');
-var commonjs = require('rollup-plugin-commonjs');
+const babel = require('@rollup/plugin-babel').default;
+const resolve = require('@rollup/plugin-node-resolve').default;
+const commonjs = require('@rollup/plugin-commonjs');
 
 module.exports = function (config) {
     config.set({
