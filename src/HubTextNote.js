@@ -80,11 +80,10 @@ export default class HubTextNote {
   constructor ({
       id, editable = false, graphic, placement = {},
       text = '', textPlaceholder = '', textMaxCharacters, cssClass,
-      onNoteEvent, onNoteFirstPlacement
+      onNoteEvent
     }) {
     Object.assign(this, { id, editable, graphic, text, textPlaceholder, textMaxCharacters, cssClass, placement });
     this.emitNoteEvent = typeof onNoteEvent === 'function' ? onNoteEvent : function(){}; // provide an empty callback as fallback
-    this.onNoteFirstPlacement = typeof onNoteFirstPlacement === 'function' ? onNoteFirstPlacement : function(){};
     this.anchor = null; // a point on the graphic that the text note is positioned relative to
     this.mapPoint = null; // the current computed map point for the text note element
     this.dragging = false; // is note actively being dragged
@@ -94,6 +93,10 @@ export default class HubTextNote {
     }
     this.placement.pointAlignments = this.placement.pointAlignments ?? Object.keys(HubTextNote.alignmentOctants); // default to all alignments
     this.placement.outsidePolygon = this.placement.outsidePolygon ?? true;
+
+    // promise that resolves when note has been placed o on the map
+    this.placedPromise = new Promise(resolve => this.markAsPlaced = resolve);
+
     this._listeners = []; // DOM event listeners
     this._handles = []; // JSAPI handles
   }
@@ -141,6 +144,10 @@ export default class HubTextNote {
   draggable () {
     return this.editable === true &&
       (this.graphic.geometry.type !== 'point' || this.placement.pointAlignments.length > 1);
+  }
+
+  placed () {
+    return this.placedPromise; // resolves when note has been placed on map
   }
 
   setOccluded (state) {
@@ -385,14 +392,11 @@ export default class HubTextNote {
 
   // Update text note position in world space and screenspace
   async updatePosition (view) {
-    const firstPlacement = (this.mapPoint == null);
     const changed = await this.updateMapPoint(view);
     this.updateTextElement(view);
+    this.markAsPlaced();
     if (changed) {
       this.emitNoteEvent('update-position', this, { type: 'update-position' });
-      if (firstPlacement) {
-        this.onNoteFirstPlacement();
-      }
     }
   }
 
@@ -581,7 +585,7 @@ export default class HubTextNote {
           this.vector = [0, 0];
         }
       }
-      }
+    }
 
     return this.computeAnchoredPosition(view);
   }
