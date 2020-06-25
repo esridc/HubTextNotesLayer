@@ -80,6 +80,7 @@ export default class HubTextNote {
     this.emitNoteEvent = typeof onNoteEvent === 'function' ? onNoteEvent : function(){}; // provide an empty callback as fallback
     this.anchor = null; // a point on the graphic that the text note is positioned relative to
     this.mapPoint = null; // the current computed map point for the text note element
+    this.dragging = false; // is note actively being dragged
     if (placementHint) {
       // convert to Point instance if needed, so param will accept JSON or existing instance
       this.placementHint = new HubTextNote.Point(placementHint);
@@ -177,7 +178,6 @@ export default class HubTextNote {
 
   setDrag (state, view) {
     this.dragging = state;
-    this.wasDragged = false; // reset
     if (this.dragging) {
       // save current cursor and activate drag cursor
       this.prevCursor = view.cursor;
@@ -191,7 +191,11 @@ export default class HubTextNote {
       this.textElement.style.cursor = 'auto';
       view.cursor = this.prevCursor;
       this.container.classList.remove(NOTE_DRAGGING_CLASS);
+      if (this.wasDragged) {
+        this.emitNoteEvent('drag-stop', this, { type: 'drag-stop' });
+      }
     }
+    this.wasDragged = false; // reset
   }
 
   createElements (view, notesContainer) {
