@@ -197,6 +197,9 @@ export default class HubTextNote {
       }
     }
     this.wasDragged = false; // reset
+    this.lastDragPoint = null;
+    this.dragVelocity = { x: 0, y: 0 };
+    this.dragAcceleration = { x: 0, y: 0 };
   }
 
   createElements (view, notesContainer) {
@@ -348,7 +351,27 @@ export default class HubTextNote {
       this.wasDragged = true;
       this.anchor = null; // will be re-calculated on next update
       this.placementHint = view.toMap(event); // place closest to the current pointer location
-      this.emitNoteEvent('drag', this, event); // layer view will request a re-render
+
+      if (this.graphic.geometry.type !== 'point') {
+        if (this.lastDragPoint) {
+          const lastDragVelocity = this.dragVelocity;
+          this.dragVelocity = {
+            x: event.x - this.lastDragPoint.x,
+            y: event.y - this.lastDragPoint.y
+          };
+          this.dragAcceleration = {
+            x: this.dragVelocity.x - lastDragVelocity.x,
+            y: this.dragVelocity.y - lastDragVelocity.y
+          };
+        }
+        this.lastDragPoint = { x: event.x, y: event.y };
+      }
+
+      this.emitNoteEvent('drag', this, { // layer view will request a re-render
+        ...event,
+        velocity: this.dragVelocity,
+        acceleration: this.dragAcceleration
+      });
     }
   }
 
