@@ -214,7 +214,7 @@ export default class HubTextNote {
 
     // setup inner note element, which is provides editing capabilities (when enabled)
     this.textElement = document.createElement('div');
-    this.textElement.contentEditable = this.editable;
+    this.textElement.contentEditable = (this.editable === true);
     this.textElement.innerText = this.text;
     this.textElement.setAttribute('data-placeholder', this.textPlaceholder);
     this.textElement.tabIndex = 1;
