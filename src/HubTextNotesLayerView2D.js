@@ -1,4 +1,4 @@
-import * as BaseLayerView2D from 'esri/views/2d/layers/BaseLayerView2D';
+import * as GraphicsLayerView2D from 'esri/views/2d/layers/GraphicsLayerView2D';
 import * as Graphic from 'esri/Graphic';
 
 const NOTES_CONTAINER_STYLE = `
@@ -10,8 +10,8 @@ const NOTES_CONTAINER_STYLE = `
   height: 100%;
 `;
 
-// The layer view is resopnsible for creating and managing text note HTML elements to stay in sync with the map view
-const HubTextNotesLayerView2D = BaseLayerView2D.createSubclass({
+// The layer view is responsible for creating and managing text note HTML elements to stay in sync with the map view
+const HubTextNotesLayerView2D = GraphicsLayerView2D.createSubclass({
   declaredClass: 'HubTextNotesLayerView2D',
 
   constructor () {
@@ -42,7 +42,7 @@ const HubTextNotesLayerView2D = BaseLayerView2D.createSubclass({
   setDirty (dirty) {
     this._dirty = dirty;
     if (this._dirty) {
-      this.requestRender();
+      this.requestUpdate();
     }
   },
 
@@ -52,7 +52,12 @@ const HubTextNotesLayerView2D = BaseLayerView2D.createSubclass({
   },
 
   // Implementation of LayerView method
-  render () {
+  processUpdate () {
+    if (!this.updateRequested) {
+      return;
+    }
+    this.updateRequested = false;
+
     // remove any empty notes
     this.layer.hubNotes
       .filter(note => note.empty)
