@@ -62,7 +62,9 @@ const HubTextNotesLayerView2D = BaseLayerView2D.createSubclass({
     if (this._dirty) {
       this.setDirty(false);
       this.layer.updateNotePositions(this.view); // update text note positions in world/screen
-      this.layer.collideNotes(); // update text note visibility based on collisions
+      if (this.view.stationary) {
+        this.layer.collideNotes(); // update text note visibility based on collisions
+      }
     }
   },
 
