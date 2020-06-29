@@ -9,6 +9,7 @@ import { getFontSettings } from './fonts';
 const NOTE_TEXT_CLASS = 'note-text'; // style the text div, which may be contenteditable
 const NOTE_HOVER_CLASS = 'note-hover'; // style the hover state
 const NOTE_SELECT_CLASS = 'note-select'; // style the selected state
+const NOTE_DRAGGABLE_CLASS = 'note-draggable'; // style note to indicate draggability
 const NOTE_DRAGGING_CLASS = 'note-dragging'; // style note while dragging
 const NOTE_OCCLUDED_CLASS = 'note-occluded'; // style occluded notes
 
@@ -202,8 +203,13 @@ export default class HubTextNote {
     // setup outer note element, which is draggable (when editing is enable)
     this.container = document.createElement('div');
     this.container.style = `${NOTE_CONTAINER_STYLE} ${this.draggable() ? NOTE_DRAGGABLE_STYLE : ''}`;
+
     if (this.cssClass) {
       this.container.classList.add(this.cssClass); // apply user-supplied style
+    }
+
+    if (this.draggable()) {
+      this.container.classList.add(NOTE_DRAGGABLE_CLASS); // mark note as draggable, for styling by user
     }
 
     // setup inner note element, which is provides editing capabilities (when enabled)
