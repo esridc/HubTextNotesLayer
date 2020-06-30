@@ -391,8 +391,8 @@ export default class HubTextNote {
 
     point.x -= this.container.offsetWidth / 2;
     point.y -= this.container.offsetHeight / 2;
-    point.x = Math.round(point.x);
-    point.y = Math.round(point.y);
+    point.x = Math.floor(point.x);
+    point.y = Math.floor(point.y);
 
     this.container.style.left = `${point.x}px`;
     this.container.style.top = `${point.y}px`;
