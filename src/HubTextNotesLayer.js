@@ -73,10 +73,10 @@ const HubTextNotesLayer = Layer.createSubclass({
       return note;
     }
 
-    // then fallback to comparing by object id, necessary for features from a FeatureLayer.hitTest()
+    // then fallback to comparing by layer and object id, necessary for features from a FeatureLayer.hitTest()
     return this.hubNotes
-      .filter(note => note.graphic.getObjectId() != null)
-      .find(note => note.graphic.getObjectId() === graphic.getObjectId());
+      .filter(note => note.graphic.layer.id != null && note.graphic.getObjectId() != null)
+      .find(note => note.graphic.layer.id === graphic.layer.id && note.graphic.getObjectId() === graphic.getObjectId());
   },
 
   setHoveredNoteForGraphic (graphic) {
