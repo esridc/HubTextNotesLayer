@@ -86,7 +86,9 @@ const HubTextNotesLayerView2D = GraphicsLayerView2D.createSubclass({
       geometry: notes[0].mapPoint, // TODO: add full note extent if deemed necessary
       attributes: {
         id: notes[0].id,
-        text: notes[0].text
+        text: notes[0].text,
+        graphicObjectId: notes[0].graphic.getObjectId(),
+        graphicLayerId: notes[0].graphic.layer.id
       },
       layer: this.layer,
       sourceLayer: this.layer
