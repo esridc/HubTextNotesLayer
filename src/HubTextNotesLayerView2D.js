@@ -31,7 +31,7 @@ const HubTextNotesLayerView2D = GraphicsLayerView2D.createSubclass({
 
     // add event handlers
     this._handles.push(this.layer.on('note-add', event => this.addNoteElements(event.note)));
-    this._handles.push(this.layer.on(['note-select', 'note-hover', 'note-drag'], () => this.setDirty(true)));
+    this._handles.push(this.layer.on(['note-select', 'note-hover', 'note-drag', 'note-blur'], () => this.setDirty(true)));
     this._handles.push(this.view.watch('extent', () => this.setDirty(true)));
   },
 
