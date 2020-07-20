@@ -2,6 +2,7 @@ import * as geometryEngine from 'esri/geometry/geometryEngine';
 import * as Point from 'esri/geometry/Point';
 import * as screenUtils from 'esri/core/screenUtils';
 import * as symbolUtils from 'esri/symbols/support/symbolUtils';
+import * as webMercatorUtils from 'esri/geometry/support/webMercatorUtils';
 import { getFontSettings } from './fonts';
 
 // CSS classes added to text note elements to indicate various states, for user-provided styling
@@ -85,6 +86,7 @@ export default class HubTextNote {
     Object.assign(this, { id, editable, graphic, text, textPlaceholder, textMaxCharacters, cssClass, placement });
     this.emitNoteEvent = typeof onNoteEvent === 'function' ? onNoteEvent : function(){}; // provide an empty callback as fallback
     this.anchor = null; // a point on the graphic that the text note is positioned relative to
+    this.anchorToGraphicCenter = null; // vector from graphic's center to anchor, used to re-position anchor when graphic moves
     this.mapPoint = null; // the current computed map point for the text note element
     this.dragging = false; // is note actively being dragged
     if (this.placement.hint) {
@@ -298,6 +300,9 @@ export default class HubTextNote {
       this._handles.push(view.on('pointer-move', event => this.onDragEvent(event, view)));
     }
 
+    // update note position when graphic moves or changes shape (includes re-positioning anchor)
+    this._handles.push(this.graphic.watch('geometry', () => this.updateAnchorPosition(view)));
+
     notesContainer.appendChild(this.container);
     this.updatePosition(view);
   }
@@ -364,8 +369,10 @@ export default class HubTextNote {
   onDragEvent (event, view) {
     if (this.dragging) {
       this.wasDragged = true;
-      this.anchor = null; // will be re-calculated on next update
+
+      // tell note to re-calculate anchor position
       this.placement.hint = view.toMap(event); // place closest to the current pointer location
+      this.anchor = null; // will be re-calculated on next update
 
       if (this.graphic.geometry.type !== 'point') {
         if (this.lastDragPoint) {
@@ -432,9 +439,9 @@ export default class HubTextNote {
     const prevPoint = JSON.stringify(this.mapPoint?.toJSON());
 
     this.mapPoint = new HubTextNote.Point({
-      spatialReference: this.graphic.geometry.spatialReference,
       x: point.x,
-      y: point.y
+      y: point.y,
+      spatialReference: this.graphic.geometry.spatialReference
     });
 
     return JSON.stringify(this.mapPoint.toJSON()) !== prevPoint;
@@ -442,7 +449,7 @@ export default class HubTextNote {
 
   async placePointNote (view) {
     if (!this.anchor) { // set placement anchor if this is the first time placing the note
-      this.anchor = this.graphic.geometry.clone();
+      this.setAnchor(this.graphic.geometry.clone());
       this.buffer = [6, 3]; // space in pixels between marker and note
     }
 
@@ -507,13 +514,12 @@ export default class HubTextNote {
           .reduce((a, b) => [a[0] + b[0], a[1] + b[1]], [0, 0])
           .map(p => p / line.paths[0].length);
 
-        const center = HubTextNote.Point({
-          type: 'point',
-          spatialReference: line.spatialReference,
+        const center = new HubTextNote.Point({
           x: centerCoords[0],
-          y: centerCoords[1]
+          y: centerCoords[1],
+          spatialReference: line.spatialReference
         });
-        this.anchor = HubTextNote.geometryEngine.nearestCoordinate(line, center).coordinate;
+        this.setAnchor(HubTextNote.geometryEngine.nearestCoordinate(line, center).coordinate);
 
         // derive normal perpendicular to line from first to last point
         const first = line.paths[0][0];
@@ -523,7 +529,7 @@ export default class HubTextNote {
           last[0] - first[0]
         ]);
       } else {
-        this.anchor = HubTextNote.geometryEngine.nearestCoordinate(line, nearPoint).coordinate;
+        this.setAnchor(HubTextNote.geometryEngine.nearestCoordinate(line, nearPoint).coordinate);
         this.vector = normalize([
           this.anchor.x - nearPoint.x,
           this.anchor.y - nearPoint.y
@@ -545,14 +551,12 @@ export default class HubTextNote {
         const extent = polygon.extent;
         if (extent.width > extent.height) { // if wider, place near bottom side
           nearPoint = new HubTextNote.Point({
-            type: 'point',
             x: (extent.xmin + extent.xmax) / 2,
             y: extent.ymin,
             spatialReference: polygon.spatialReference
           });
         } else { // if taller, place near right side
           nearPoint = new HubTextNote.Point({
-            type: 'point',
             x: extent.xmax,
             y: (extent.ymin + extent.ymax) / 2,
             spatialReference: polygon.spatialReference
@@ -563,7 +567,7 @@ export default class HubTextNote {
       const dist = HubTextNote.geometryEngine.distance(polygon, nearPoint);
       if (dist === 0) {
         // if the note is inside the polygon, keep it in place
-        this.anchor = nearPoint.clone();
+        this.setAnchor(nearPoint.clone());
         this.vector = [0, 0];
       } else {
         // if the note is outside the polygon, place along the polygon's outer ring if allowed, or constrain to interior
@@ -574,7 +578,7 @@ export default class HubTextNote {
           spatialReference: polygon.spatialReference
         };
 
-        this.anchor = HubTextNote.geometryEngine.nearestCoordinate(ring, nearPoint).coordinate;
+        this.setAnchor(HubTextNote.geometryEngine.nearestCoordinate(ring, nearPoint).coordinate);
 
         if (this.placement.outsidePolygon === true) { // allow placement outside of polygon
           this.vector = normalize([
@@ -588,6 +592,51 @@ export default class HubTextNote {
     }
 
     return this.computeAnchoredPosition(view);
+  }
+
+  // update the current anchor, and compute its position relative to the target graphic
+  setAnchor (anchorPoint) {
+    this.anchor = anchorPoint;
+
+    // center-point of attached graphic, can be anywhere stable on the target graphic,
+    // just needs to provide an offset from a point on the graphic to the anchor
+    const center = webMercatorUtils.project(
+      this.graphic.geometry.type === 'point' ?
+        this.graphic.geometry : this.graphic.geometry.extent.center,
+      this.anchor.spatialReference
+    );
+
+    this.anchorToGraphicCenter = new HubTextNote.Point({
+      x: this.anchor.x - center.x,
+      y: this.anchor.y - center.y,
+      spatialReference: this.anchor.spatialReference
+    });
+  }
+
+  // re-position the anchor relative to the target graphic
+  // called when the graphic geometry changes
+  updateAnchorPosition (view) {
+    if (!this.anchor || !this.anchorToGraphicCenter) {
+      return;
+    }
+
+    const center = webMercatorUtils.project(
+      this.graphic.geometry.type === 'point' ?
+        this.graphic.geometry : this.graphic.geometry.extent.center,
+      this.anchor.spatialReference
+    );
+
+    this.anchor = new HubTextNote.Point({
+      x: center.x + this.anchorToGraphicCenter.x,
+      y: center.y + this.anchorToGraphicCenter.y,
+      spatialReference: this.anchor.spatialReference
+    });
+
+    // tell note to re-calculate anchor position
+    this.placement.hint = this.anchor; // keep current anchor location, but account for changes in graphic's shape
+    this.anchor = null; // will be re-calculated on next update
+
+    this.updatePosition(view);
   }
 
   // find a note's position relative to an anchor point and direction, for the current zoom
