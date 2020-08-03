@@ -55,6 +55,8 @@ export default class HubTextNote {
   static Point = Point;
   static geometryEngine = geometryEngine;
   static screenUtils = screenUtils;
+  static symbolUtils = symbolUtils;
+  static webMercatorUtils = webMercatorUtils;
 
   static octantOffsets = [
     [1, 0], // right
@@ -457,7 +459,7 @@ export default class HubTextNote {
     const noteSize = [this.container.offsetWidth, this.container.offsetHeight];
 
     // JSAPI may need to compute symbol, e.g. for feature layers
-    const symbol = await symbolUtils.getDisplayedSymbol(this.graphic, view);
+    const symbol = await HubTextNote.symbolUtils.getDisplayedSymbol(this.graphic, view);
     const graphicSize = (symbol.type === 'picture-marker' ?
       [symbol.width, symbol.height] : // width/height from picture marker
       [symbol.size + symbol.outline.width, symbol.size + symbol.outline.width]) // size from simple marker
@@ -600,7 +602,7 @@ export default class HubTextNote {
 
     // center-point of attached graphic, can be anywhere stable on the target graphic,
     // just needs to provide an offset from a point on the graphic to the anchor
-    const center = webMercatorUtils.project(
+    const center = HubTextNote.webMercatorUtils.project(
       this.graphic.geometry.type === 'point' ?
         this.graphic.geometry : this.graphic.geometry.extent.center,
       this.anchor.spatialReference
@@ -620,7 +622,7 @@ export default class HubTextNote {
       return;
     }
 
-    const center = webMercatorUtils.project(
+    const center = HubTextNote.webMercatorUtils.project(
       this.graphic.geometry.type === 'point' ?
         this.graphic.geometry : this.graphic.geometry.extent.center,
       this.anchor.spatialReference

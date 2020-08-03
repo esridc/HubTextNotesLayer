@@ -31,7 +31,7 @@ export default {
     ],
     "horizontalAlignment": "center",
     "verticalAlignment": "middle",
-    "xoffset": 0.07448797393590212,
+    "xoffset": 0.4694879734888673,
     "yoffset": -0.008748816791921854
   },
   "attributes": {

@@ -10,31 +10,36 @@ const assert = chai.assert;
 
 describe('HubNote', () => {
 
-  let note, view;
+  let note, view, notesContainer;
 
   before(async () => {
     // load JSAPI dependencies
-    const [Point, geometryEngine, screenUtils] = await loadModules([
-      'esri/geometry/Point', 'esri/geometry/geometryEngine', 'esri/core/screenUtils'
+    const [Point, geometryEngine, screenUtils, symbolUtils, webMercatorUtils] = await loadModules([
+      'esri/geometry/Point',
+      'esri/geometry/geometryEngine',
+      'esri/core/screenUtils',
+      'esri/symbols/support/symbolUtils',
+      'esri/geometry/support/webMercatorUtils'
     ]);
-    Object.assign(HubTextNote, { Point, geometryEngine, screenUtils });
+    Object.assign(HubTextNote, { Point, geometryEngine, screenUtils, symbolUtils, webMercatorUtils });
     return Promise.resolve(); // avoids some timeout errors (?)
   });
 
   beforeEach(() => {
     view = createView();
-    const notesContainer = document.createElement('div'); // created by layer view
+    notesContainer = document.createElement('div'); // created by layer view
+    document.body.appendChild(notesContainer);
 
     note = new HubTextNote({ graphic: polygonGraphic, text: 'this is a test note', cssClass: 'map-note' });
     note.createElements(view, notesContainer);
-    document.body.appendChild(note.container); // needs to be in DOM for some tests like focus
+    notesContainer.appendChild(note.container); // needs to be in DOM for some tests like focus
   });
 
   afterEach(() => {
-    document.body.removeChild(note.container);
+    document.body.removeChild(notesContainer);
   });
 
-  it('returns an new note instance', () => {
+  it('returns a new note instance', () => {
     assert.instanceOf(note, HubTextNote);
   });
 
