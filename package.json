@@ -20,7 +20,7 @@
     "chai": "^4.2.0",
     "core-js": "^3.6.5",
     "esri-loader": "^2.14.0",
-    "karma": "^5.0.2",
+    "karma": "^6.3.14",
     "karma-chrome-launcher": "^3.1.0",
     "karma-mocha": "^2.0.0",
     "karma-mocha-reporter": "^2.2.5",
