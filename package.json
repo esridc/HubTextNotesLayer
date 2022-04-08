@@ -1,11 +1,15 @@
 {
-  "name": "esri-hub-text-notes-layer",
+  "name": "@esri/hub-text-notes-layer",
   "version": "0.7.1",
   "description": "Custom JSAPI layer for Hub text notes",
   "main": "dist/HubTextNotesLayer.js",
   "scripts": {
     "build": "yarn run rollup -c rollup.config.js",
     "test": "yarn run karma start"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/esridc/HubTextNotesLayer.git"
   },
   "files": [
     "dist"
