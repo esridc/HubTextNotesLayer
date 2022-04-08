@@ -1,4 +1,6 @@
 import * as GraphicsLayerView2D from 'esri/views/2d/layers/GraphicsLayerView2D';
+import GraphicsView2D from 'esri/views/2d/layers/graphics/GraphicsView2D';
+import GraphicContainer from 'esri/views/2d/layers/graphics/GraphicContainer';
 import * as Graphic from 'esri/Graphic';
 
 const NOTES_CONTAINER_STYLE = `
@@ -20,6 +22,19 @@ const HubTextNotesLayerView2D = GraphicsLayerView2D.createSubclass({
   },
 
   attach () {
+    // prior to 4.23, graphicsView was created in GraphicsLayerView2D initialize lifecycle method.
+    // since 4.23, the initialize lifecycle has been deprecated and graphicsView is now created
+    // in attach method, which is being overridden here. so we must create the graphicsView here
+    // when one does not already exist.
+    if (!this.graphicsView) {
+      this.graphicsView = new GraphicsView2D({
+        requestUpdateCallback: () => this.requestUpdate(),
+        view: this.view,
+        graphics: this.layer.graphics,
+        container: new GraphicContainer(this.view.featuresTilingScheme)
+      });
+    }
+
     // create container for notes and attach to map view DOM
     this.notesContainer = document.createElement('div');
     this.notesContainer.classList.add('hub-text-notes');
