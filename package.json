@@ -1,5 +1,5 @@
 {
-  "name": "hub-text-notes-layer",
+  "name": "esri-hub-text-notes-layer",
   "version": "0.7.1",
   "description": "Custom JSAPI layer for Hub text notes",
   "main": "dist/HubTextNotesLayer.js",
