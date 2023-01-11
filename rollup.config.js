@@ -1,29 +1,27 @@
 import babel from '@rollup/plugin-babel';
-import resolve from '@rollup/plugin-node-resolve';
-import commonjs from '@rollup/plugin-commonjs';
-import { terser } from 'rollup-plugin-terser';
 
 export default {
   input: 'src/HubTextNotesLayer.js',
   output: {
-    file: 'dist/HubTextNotesLayer.js',
-    format: 'amd'
+    file: 'dist/HubTextNotesLayer.mjs',
+    format: 'es',
   },
+  external: [
+    /@arcgis\/core/
+  ],
   plugins: [
-    resolve(), // resolve and commonjs are needed for babel to incorporate corejs polyfills
-    commonjs(),
-    terser(),
     babel({
       presets: [
         [
           '@babel/preset-env', {
-            targets: ['last 2 versions', 'ie >= 11'],
-            useBuiltIns: 'usage',
-            corejs: 3
+            targets: {
+              // seems reasonable since this is meant to work w/ @arcgis/core
+              esmodules: true,
+            }
           }
         ]
       ],
-      plugins: ['@babel/plugin-proposal-class-properties', 'transform-async-to-promises'],
+      plugins: ['@babel/plugin-proposal-class-properties'],
       exclude: 'node_modules/**'
     })
   ]

@@ -1,8 +1,8 @@
-import * as geometryEngine from 'esri/geometry/geometryEngine';
-import * as Point from 'esri/geometry/Point';
-import * as screenUtils from 'esri/core/screenUtils';
-import * as symbolUtils from 'esri/symbols/support/symbolUtils';
-import * as webMercatorUtils from 'esri/geometry/support/webMercatorUtils';
+import { distance, nearestCoordinate } from '@arcgis/core/geometry/geometryEngine';
+import Point from '@arcgis/core/geometry/Point';
+import { pt2px } from '@arcgis/core/core/screenUtils';
+import { getDisplayedSymbol } from '@arcgis/core/symbols/support/symbolUtils';
+import { project } from '@arcgis/core/geometry/support/webMercatorUtils';
 import { getFontSettings } from './fonts';
 
 // CSS classes added to text note elements to indicate various states, for user-provided styling
@@ -52,11 +52,13 @@ const MAX_LENGTH_ALLOWED_KEYS = [
 export default class HubTextNote {
 
   // NOTE: this is a workaround to allow these modules to be externally loaded in tests
+  // TODO: depending on how we get tests working, we may want to remove these
+  // which should allow us to remove @babel/plugin-proposal-class-properties too
   static Point = Point;
-  static geometryEngine = geometryEngine;
-  static screenUtils = screenUtils;
-  static symbolUtils = symbolUtils;
-  static webMercatorUtils = webMercatorUtils;
+  static geometryEngine = { distance, nearestCoordinate };
+  static screenUtils = { pt2px };
+  static symbolUtils = { getDisplayedSymbol };
+  static webMercatorUtils = { project };
 
   static octantOffsets = [
     [1, 0], // right

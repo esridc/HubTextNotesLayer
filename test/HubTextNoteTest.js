@@ -1,5 +1,4 @@
 import chai from 'chai';
-import { loadModules } from 'esri-loader';
 import HubTextNote from '../src/HubTextNote';
 
 import { createView } from './helpers';
@@ -13,14 +12,12 @@ describe('HubNote', () => {
   let note, view, notesContainer;
 
   before(async () => {
-    // load JSAPI dependencies
-    const [Point, geometryEngine, screenUtils, symbolUtils, webMercatorUtils] = await loadModules([
-      'esri/geometry/Point',
-      'esri/geometry/geometryEngine',
-      'esri/core/screenUtils',
-      'esri/symbols/support/symbolUtils',
-      'esri/geometry/support/webMercatorUtils'
-    ]);
+    // mock JSAPI dependencies
+    const Point = () => {};
+    const geometryEngine = { distance: () => {}, nearestCoordinate: () => {} };
+    const screenUtils = { pt2px: () => {} };
+    const symbolUtils = { getDisplayedSymbol: () => {} };
+    const webMercatorUtils = { project: () => {} };
     Object.assign(HubTextNote, { Point, geometryEngine, screenUtils, symbolUtils, webMercatorUtils });
     return Promise.resolve(); // avoids some timeout errors (?)
   });
