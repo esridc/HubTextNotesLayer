@@ -41,22 +41,14 @@ To programmatically focus a note for editing, use the `note.focus()` method.
 
 ## Installation and Loading
 
-`yarn add hub-text-notes-layer`
+`yarn add @esri/hub-text-notes-layer`
 
-To load the layer for use with the JSAPI, you need to configure the Dojo loader with the location of the AMD package. An example using `esri-loader`:
+**NOTE: as of v1.0.0 this package has a peer dependency on `@arcgis/core`, so you must have that already installed**
 
+Then you can `import` the layer class:
+
+```js
+import HubTextNotesLayer from '@esri/hub-text-notes-layer';
 ```
-import { loadModules, setDefaultOptions } from 'esri-loader';
 
-setDefaultOptions({
-  dojoConfig: {
-    async: true,
-    packages: [{
-      name: 'hub',
-      location: 'path/to/hub-text-notes-layer/dist'
-    }]
-  }
-});
-
-const [HubTextNotesLayer] = await loadModules(['hub/HubTextNotesLayer']);
-```
+If you need to use this with an AMD build of the ArcGIS API, you should install a pre-1.0.0 version with `yarn add @esri/hub-text-notes-layer@^0.7` and then see [these instructions](https://github.com/esridc/HubTextNotesLayer/blob/f5a1afa3762617cb50f1cdd60dbc63f71373490e/README.md#installation-and-loading) for how you can configure Dojo to load the layer class.

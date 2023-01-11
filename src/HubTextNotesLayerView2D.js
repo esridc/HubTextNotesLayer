@@ -1,7 +1,7 @@
-import * as GraphicsLayerView2D from 'esri/views/2d/layers/GraphicsLayerView2D';
-import GraphicsView2D from 'esri/views/2d/layers/graphics/GraphicsView2D';
-import GraphicContainer from 'esri/views/2d/layers/graphics/GraphicContainer';
-import * as Graphic from 'esri/Graphic';
+import GraphicsLayerView2D from '@arcgis/core/views/2d/layers/GraphicsLayerView2D';
+import GraphicsView2D from '@arcgis/core/views/2d/layers/graphics/GraphicsView2D';
+import GraphicContainer from '@arcgis/core/views/2d/layers/graphics/GraphicContainer';
+import Graphic from '@arcgis/core/Graphic';
 
 const NOTES_CONTAINER_STYLE = `
   z-index: 0;

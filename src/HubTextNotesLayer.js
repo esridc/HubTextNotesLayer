@@ -1,4 +1,4 @@
-import * as Layer from 'esri/layers/Layer';
+import Layer from '@arcgis/core/layers/Layer';
 
 import HubTextNote from './HubTextNote';
 import HubTextNotesLayerView2D from './HubTextNotesLayerView2D';
