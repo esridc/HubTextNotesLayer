@@ -43,7 +43,7 @@ To programmatically focus a note for editing, use the `note.focus()` method.
 
 `yarn add @esri/hub-text-notes-layer`
 
-**NOTE: as of v2.0.0 this package has a peer dependency on `@arcgis/core@4.25`, so you must have that already installed**
+**NOTE: as of v3.0.0 this package has a peer dependency on `@arcgis/core@4.26`, so you must have that already installed**
 
 Then you can `import` the layer class:
 
