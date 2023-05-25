@@ -36,3 +36,5 @@ jobs:
       with:
         version: PR-${{ github.event.number }}
         commit: ${{ github.sha }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.HUB_GITHUB_ACTIONS_SHARED_READ_TOKEN }}
