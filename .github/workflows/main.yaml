@@ -1,0 +1,38 @@
+name: main
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions/setup-node@v3
+      with:
+        node-version: lts/*
+        cache: yarn
+    - name: Install dependencies
+      run: yarn install --immutable
+    - name: Build
+      run: yarn run build
+    - name: Test
+      run: yarn run test
+    - name: Checkout private actions
+      if: ${{ github.ref_name != 'master' }}
+      uses: actions/checkout@v3
+      with:
+        repository: ArcGIS/hub-github-actions-shared
+        token: ${{ secrets.HUB_GITHUB_ACTIONS_SHARED_READ_TOKEN }}
+        path: hub-github-actions-shared
+    - name: Publish PR preview
+      if: ${{ github.ref_name != 'master' }}
+      uses: ./hub-github-actions-shared/.github/actions/publish-library-preview
+      with:
+        version: PR-${{ github.event.number }}
+        commit: ${{ github.sha }}
