@@ -6,7 +6,8 @@
   "scripts": {
     "build": "rollup -c rollup.config.js",
     "prepare": "npm run build",
-    "test": "karma start"
+    "test": "karma start",
+    "test:ci": "karma start --browsers=ChromeHeadlessCI"
   },
   "repository": {
     "type": "git",

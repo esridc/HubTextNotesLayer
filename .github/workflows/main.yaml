@@ -22,7 +22,7 @@ jobs:
     - name: Build
       run: yarn run build
     - name: Test
-      run: yarn run test
+      run: yarn run test:ci
     - name: Checkout private actions
       if: ${{ github.ref_name != 'master' }}
       uses: actions/checkout@v3
